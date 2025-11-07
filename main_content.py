@@ -2,8 +2,7 @@ import customtkinter
 import sqlite3
 import os
 from tkinter import messagebox, filedialog
-from PIL import Image
-from main_content_database import add_object, change_object_info, delete_object, verify_object
+from databases.main_content_database import add_object, change_object_info, delete_object, verify_object
 
 
 def set_window_icon(window):
@@ -211,7 +210,7 @@ class MainApp(customtkinter.CTk):
             widget.destroy()
 
         # Загружаем данные из БД
-        conn = sqlite3.connect('premises.db')
+        conn = sqlite3.connect('databases/premises.db')
         cursor = conn.cursor()
 
         query = "SELECT * FROM houses"
@@ -668,7 +667,7 @@ class AddEditDialog(customtkinter.CTkToplevel):
             return
 
         # Получаем ID пользователя для created_by
-        conn = sqlite3.connect('users.db')
+        conn = sqlite3.connect('databases/users.db')
         cursor = conn.cursor()
         cursor.execute('SELECT id FROM users WHERE username = ?', (self.username,))
         user_result = cursor.fetchone()

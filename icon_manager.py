@@ -1,7 +1,5 @@
-import customtkinter
 from PIL import Image
 import tempfile
-import os
 
 def set_window_icon(window):
     """Простая версия - используем только относительные пути"""

@@ -4,8 +4,7 @@ import threading
 import time
 import re
 
-import auth_database
-from auth_database import add_user
+from databases import auth_database
 
 
 def set_window_icon(window):
