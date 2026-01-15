@@ -2,7 +2,7 @@ import customtkinter
 import sqlite3
 import os
 from tkinter import messagebox, filedialog
-from databases.main_content_database import add_object, change_object_info, delete_object, verify_object
+from databases.app_database import add_object, change_object_info, delete_object, verify_object
 
 
 def set_window_icon(window):
@@ -34,7 +34,7 @@ class MainApp(customtkinter.CTk):
         super().__init__()
         self.username = username
         self.user_group = user_group
-        self.title("Domovoy - Аренда домов")
+        self.title("Domovoy - Бронирование домов")
         self.geometry("1280x720")
         self.configure(fg_color="#FFFFFF")
         set_window_icon(self)
@@ -71,6 +71,55 @@ class MainApp(customtkinter.CTk):
         except Exception as e:
             print(f"Ошибка создания скругленного изображения: {e}")
             return None
+
+    def show_all_users(self):
+        """Показывает список всех пользователей"""
+        import sqlite3
+
+        conn = sqlite3.connect('databases/app.db')
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, username, user_group FROM users ORDER BY id")
+        users = cursor.fetchall()
+        conn.close()
+
+        # Создаем простое окно с информацией
+        from tkinter import Toplevel, Text, Scrollbar
+        import tkinter as tk
+
+        users_window = Toplevel(self)
+        users_window.title("Все пользователи")
+        users_window.geometry("400x500")
+        users_window.configure(bg="white")
+
+        # Создаем текстовое поле со скроллом
+        text_frame = tk.Frame(users_window, bg="white")
+        text_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        text_widget = Text(text_frame, wrap="word", font=("Arial", 10), bg="white")
+        scrollbar = Scrollbar(text_frame, command=text_widget.yview)
+        text_widget.configure(yscrollcommand=scrollbar.set)
+
+        text_widget.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        # Добавляем данные
+        if users:
+            for user in users:
+                user_id, username, user_group = user
+                text_widget.insert("end", f"ID: {user_id}\n")
+                text_widget.insert("end", f"Имя: {username}\n")
+                text_widget.insert("end", f"Группа: {user_group}\n")
+                text_widget.insert("end", "-" * 30 + "\n\n")
+        else:
+            text_widget.insert("end", "Нет пользователей в базе данных")
+
+        text_widget.configure(state="disabled")  # Только для чтения
+
+        # Кнопка закрытия
+        close_btn = tk.Button(users_window, text="Закрыть",
+                              command=users_window.destroy,
+                              bg="#6366F1", fg="white", font=("Arial", 12))
+        close_btn.pack(pady=10)
 
     def setup_sidebar(self):
         # Боковая панель для фильтров
@@ -166,6 +215,37 @@ class MainApp(customtkinter.CTk):
                                                         height=40)
             unverified_button.grid(row=9, column=0, padx=20, pady=5, sticky="ew")
 
+        # Админская панель (только для админа)
+        if self.user_group == 'admin':
+            # Разделитель
+            separator = customtkinter.CTkFrame(sidebar, height=2, fg_color="#D1D5DB")
+            separator.grid(row=10, column=0, padx=20, pady=20, sticky="ew")
+
+            # Заголовок админки
+            admin_label = customtkinter.CTkLabel(sidebar,
+                                                 text="Админ-панель",
+                                                 text_color="#111318",
+                                                 font=("Arial", 16, "bold"))
+            admin_label.grid(row=11, column=0, padx=20, pady=(0, 10), sticky="w")
+
+            # Кнопка добавления пользователя
+            add_user_btn = customtkinter.CTkButton(sidebar,
+                                                   text="➕ Добавить пользователя",
+                                                   command=self.show_add_user_dialog,
+                                                   fg_color="#8B5CF6",
+                                                   text_color="#FFFFFF",
+                                                   height=40)
+            add_user_btn.grid(row=12, column=0, padx=20, pady=5, sticky="ew")
+
+            # Кнопка просмотра всех пользователей (ДОБАВЬТЕ ЭТУ ФУНКЦИЮ В КЛАСС MainApp)
+            view_users_btn = customtkinter.CTkButton(sidebar,
+                                                     text="👥 Все пользователи",
+                                                     command=self.show_all_users,
+                                                     fg_color="#6366F1",
+                                                     text_color="#FFFFFF",
+                                                     height=40)
+            view_users_btn.grid(row=13, column=0, padx=20, pady=5, sticky="ew")
+
     def setup_main_content(self):
         # Основная область контента
         main_frame = customtkinter.CTkFrame(self, fg_color="#FFFFFF")
@@ -175,7 +255,7 @@ class MainApp(customtkinter.CTk):
 
         # Заголовок
         title_label = customtkinter.CTkLabel(main_frame,
-                                             text="Доступные дома для аренды",
+                                             text="Дома для бронирования",  # Изменили текст
                                              text_color="#111318",
                                              font=("Arial", 24, "bold"))
         title_label.grid(row=0, column=0, padx=20, pady=20, sticky="w")
@@ -188,6 +268,184 @@ class MainApp(customtkinter.CTk):
 
         # Привязка колесика мыши для скроллинга
         self.bind_mouse_wheel()
+
+    def show_add_user_dialog(self):
+        """Открывает диалог добавления пользователя"""
+        # Проверяем, не открыт ли уже диалог
+        if hasattr(self, '_add_user_dialog') and self._add_user_dialog.winfo_exists():
+            self._add_user_dialog.lift()  # Поднимаем существующий диалог
+            self._add_user_dialog.focus_set()
+            return
+
+        # Создаем новый диалог
+        self._add_user_dialog = self.AddUserDialog(self)
+
+        # Отслеживаем закрытие диалога
+        self._add_user_dialog.bind("<Destroy>", lambda e: self.on_add_user_dialog_closed())
+
+    def on_add_user_dialog_closed(self):
+        """Вызывается при закрытии диалога добавления пользователя"""
+        if hasattr(self, '_add_user_dialog'):
+            del self._add_user_dialog
+
+    def check_user_dialog_closed(self, dialog):
+        """Проверяет, закрыт ли диалог добавления пользователя"""
+        if not dialog.winfo_exists():
+            # Диалог закрыт, можно обновить что-то если нужно
+            pass
+        else:
+            self.after(100, self.check_user_dialog_closed, dialog)
+
+    class AddUserDialog(customtkinter.CTkToplevel):
+        def __init__(self, parent):
+            super().__init__(parent)
+            self.parent = parent
+            self.title("Добавить пользователя")
+            self.geometry("400x450")
+            self.configure(fg_color="#FFFFFF")
+            self.resizable(False, False)
+
+            # НЕ делаем grab_set сразу - окно еще не готово
+            self.transient(parent)
+
+            # Заголовок
+            title_label = customtkinter.CTkLabel(self,
+                                                 text="Добавление пользователя",
+                                                 text_color="#111318",
+                                                 font=("Arial", 20, "bold"))
+            title_label.pack(pady=20)
+
+            # Поля ввода с использованием нового метода create_input_field
+            self.username_entry = self.create_input_field("Имя пользователя", 0)
+            self.password_entry = self.create_input_field("Пароль", 1, show="•")
+            self.password_repeat_entry = self.create_input_field("Повторите пароль", 2, show="•")
+
+            # Выбор группы
+            group_frame = customtkinter.CTkFrame(self, fg_color="transparent")
+            group_frame.pack(pady=10)
+
+            customtkinter.CTkLabel(group_frame,
+                                   text="Группа:",
+                                   font=("Arial", 12, "bold")).pack(side="left", padx=(0, 10))
+
+            self.group_var = customtkinter.StringVar(value="user")
+            self.group_menu = customtkinter.CTkOptionMenu(group_frame,
+                                                          values=["user", "admin"],
+                                                          variable=self.group_var,
+                                                          width=100)
+            self.group_menu.pack(side="left")
+
+            # Сообщение об ошибке/успехе
+            self.message_label = customtkinter.CTkLabel(self,
+                                                        text="",
+                                                        text_color="#EF4444",
+                                                        font=("Arial", 12))
+            self.message_label.pack(pady=10)
+
+            # Кнопки
+            button_frame = customtkinter.CTkFrame(self, fg_color="transparent")
+            button_frame.pack(pady=20)
+
+            cancel_btn = customtkinter.CTkButton(button_frame,
+                                                 text="Отмена",
+                                                 fg_color="#6B7280",
+                                                 command=self.destroy)
+            cancel_btn.pack(side="left", padx=10)
+
+            add_btn = customtkinter.CTkButton(button_frame,
+                                              text="Добавить",
+                                              fg_color="#10B981",
+                                              command=self.add_user)
+            add_btn.pack(side="left", padx=10)
+
+            # Через 100мс, когда окно будет готово, центрируем и захватываем фокус
+            self.after(100, self.finalize_dialog)
+
+        def create_input_field(self, placeholder, row_offset, show=""):
+            """Создает поле ввода с меткой"""
+            frame = customtkinter.CTkFrame(self, fg_color="transparent")
+            frame.pack(pady=(0, 10))
+
+            label = customtkinter.CTkLabel(frame,
+                                           text=placeholder + ":",
+                                           font=("Arial", 12, "bold"),
+                                           width=150,
+                                           anchor="w")
+            label.pack(side="left", padx=(20, 10))
+
+            entry = customtkinter.CTkEntry(frame,
+                                           placeholder_text=placeholder,
+                                           show=show,
+                                           width=200)
+            entry.pack(side="left")
+
+            return entry
+
+        def finalize_dialog(self):
+            """Завершает настройку диалога после его отображения"""
+            self.center_window()
+            self.grab_set()
+            self.focus_set()
+            self.lift()  # Поднимаем окно поверх других
+            self.protocol("WM_DELETE_WINDOW", self.destroy)  # Обработка закрытия
+
+        def center_window(self):
+            """Центрирует окно относительно родителя"""
+            self.update_idletasks()  # Обновляем информацию о размерах
+
+            # Получаем размеры родительского окна
+            parent_x = self.parent.winfo_rootx()
+            parent_y = self.parent.winfo_rooty()
+            parent_width = self.parent.winfo_width()
+            parent_height = self.parent.winfo_height()
+
+            # Получаем размеры этого окна
+            width = self.winfo_width()
+            height = self.winfo_height()
+
+            # Вычисляем позицию для центрирования
+            x = parent_x + (parent_width - width) // 2
+            y = parent_y + (parent_height - height) // 2
+
+            # Устанавливаем позицию
+            self.geometry(f"{width}x{height}+{x}+{y}")
+
+        def add_user(self):
+            """Добавляет пользователя в БД"""
+            username = self.username_entry.get().strip()
+            password = self.password_entry.get()
+            password_repeat = self.password_repeat_entry.get()
+            user_group = self.group_var.get()
+
+            # Валидация
+            if not all([username, password, password_repeat]):
+                self.message_label.configure(text="Заполните все поля", text_color="#EF4444")
+                return
+
+            if password != password_repeat:
+                self.message_label.configure(text="Пароли не совпадают", text_color="#EF4444")
+                return
+
+            if len(password) < 4:
+                self.message_label.configure(text="Пароль слишком короткий", text_color="#EF4444")
+                return
+
+            # Проверяем имя пользователя
+            if not all(c.isalnum() or c == '_' for c in username):
+                self.message_label.configure(text="Имя пользователя может содержать только буквы, цифры и _",
+                                             text_color="#EF4444")
+                return
+
+            # Добавляем в БД (используем функцию из app_database.py)
+            from databases.app_database import add_user
+            success = add_user(username, password, user_group)
+
+            if success:
+                self.message_label.configure(text="✅ Пользователь добавлен!", text_color="#10B981")
+                # Закрываем окно через 2 секунды
+                self.after(2000, self.destroy)
+            else:
+                self.message_label.configure(text="❌ Пользователь уже существует", text_color="#EF4444")
 
     def bind_mouse_wheel(self):
         """Упрощенная привязка колесика мыши"""
@@ -210,7 +468,7 @@ class MainApp(customtkinter.CTk):
             widget.destroy()
 
         # Загружаем данные из БД
-        conn = sqlite3.connect('databases/premises.db')
+        conn = sqlite3.connect('databases/app.db')
         cursor = conn.cursor()
 
         query = "SELECT * FROM houses"
@@ -269,7 +527,11 @@ class MainApp(customtkinter.CTk):
 
     def show_unverified(self):
         """Показать непроверенные объекты (только для админа)"""
-        self.load_houses(show_unverified=True)
+        if self.user_group == 'admin':
+            self.load_houses(show_unverified=True)
+        else:
+            from tkinter import messagebox
+            messagebox.showerror("Ошибка", "Эта функция доступна только для администраторов")
 
     def create_house_card(self, house, index):
         card = customtkinter.CTkFrame(self.houses_frame,
@@ -345,25 +607,30 @@ class MainApp(customtkinter.CTk):
         price_label.grid(row=2, column=1, padx=15, pady=(5, 15), sticky="w")
 
         # Кнопки действий
+        # Кнопки действий
         button_frame = customtkinter.CTkFrame(card, fg_color="transparent")
         button_frame.grid(row=2, column=2, padx=15, pady=(5, 15), sticky="e")
 
-        # Кнопка "Купить" для всех пользователей
-        buy_btn = customtkinter.CTkButton(button_frame,
-                                          text="🛒 Купить",
-                                          width=100,
-                                          height=30,
-                                          fg_color="#10B981",
-                                          text_color="#FFFFFF",
-                                          command=lambda h=house: self.buy_house(h))
-        buy_btn.pack(side="right", padx=(5, 0))
+        # Кнопка бронирования (для зарегистрированных пользователей)
+        if self.user_group in ['admin', 'user']:
+            book_btn = customtkinter.CTkButton(
+                button_frame,
+                text="📅 Забронировать",
+                width=140,
+                height=35,
+                fg_color="#10B981",  # Зеленый цвет вместо синего
+                text_color="#FFFFFF",
+                font=("Arial", 12, "bold"),
+                command=lambda h=house: self.book_house(h)
+            )
+            book_btn.pack(side="right", padx=(5, 0))
 
         # Кнопки админа
         if self.user_group == 'admin':
             if not verified:
                 verify_btn = customtkinter.CTkButton(button_frame,
                                                      text="✓ Верифицировать",
-                                                     width=120,
+                                                     width=130,
                                                      height=30,
                                                      fg_color="#10B981",
                                                      text_color="#FFFFFF",
@@ -372,7 +639,7 @@ class MainApp(customtkinter.CTk):
 
             edit_btn = customtkinter.CTkButton(button_frame,
                                                text="✏ Редактировать",
-                                               width=120,
+                                               width=130,
                                                height=30,
                                                fg_color="#3B82F6",
                                                text_color="#FFFFFF",
@@ -388,10 +655,13 @@ class MainApp(customtkinter.CTk):
                                                  command=lambda hid=house_id: self.delete_house(hid))
             delete_btn.pack(side="right", padx=(5, 0))
 
-    def buy_house(self, house):
-        """Функция покупки дома"""
+    def book_house(self, house):
+        """Новая функция бронирования (дипломная работа)"""
         house_id, address, area, floor, rooms, price, image_path, verified, created_by = house
-        messagebox.showinfo("Покупка", f"Вы приобрели дом по адресу: {address}\nЦена: {price}")
+
+        # Открываем диалог бронирования
+        from booking import BookingDialog  # Создашь отдельный файл
+        dialog = BookingDialog(self, house)
 
     def verify_house(self, house_id):
         """Верификация дома (только для админа)"""
@@ -451,17 +721,39 @@ class MainApp(customtkinter.CTk):
         self.load_houses()
 
     def show_add_dialog(self):
-        dialog = AddEditDialog(self, "Добавить объект", self.username)
-        self.after(100, self.check_dialog_closed, dialog)
+        # Проверяем, не открыт ли уже диалог
+        if hasattr(self, '_add_edit_dialog') and self._add_edit_dialog.winfo_exists():
+            self._add_edit_dialog.lift()
+            self._add_edit_dialog.focus_set()
+            return
+
+        self._add_edit_dialog = AddEditDialog(self, "Добавить объект", self.username)
+        self._add_edit_dialog.bind("<Destroy>", lambda e: self.on_add_edit_dialog_closed())
+        self.after(100, self.check_dialog_closed, self._add_edit_dialog)
 
     def show_edit_dialog(self, house):
-        dialog = AddEditDialog(self, "Редактировать объект", self.username, house)
-        self.after(100, self.check_dialog_closed, dialog)
+        # Проверяем, не открыт ли уже диалог
+        if hasattr(self, '_add_edit_dialog') and self._add_edit_dialog.winfo_exists():
+            self._add_edit_dialog.lift()
+            self._add_edit_dialog.focus_set()
+            return
+
+        self._add_edit_dialog = AddEditDialog(self, "Редактировать объект", self.username, house)
+        self._add_edit_dialog.bind("<Destroy>", lambda e: self.on_add_edit_dialog_closed())
+        self.after(100, self.check_dialog_closed, self._add_edit_dialog)
+
+    def on_add_edit_dialog_closed(self):
+        """Вызывается при закрытии диалога добавления/редактирования"""
+        if hasattr(self, '_add_edit_dialog'):
+            del self._add_edit_dialog
 
     def check_dialog_closed(self, dialog):
         """Проверяет, закрыт ли диалог и обновляет список"""
         if not dialog.winfo_exists():
             self.load_houses()
+            # Очищаем ссылку на диалог
+            if hasattr(self, '_add_edit_dialog') and self._add_edit_dialog == dialog:
+                del self._add_edit_dialog
         else:
             self.after(100, self.check_dialog_closed, dialog)
 
@@ -488,9 +780,8 @@ class AddEditDialog(customtkinter.CTkToplevel):
         self.username = username
         self.image_path = None
 
-        # Центрируем диалог
+        # НЕ делаем grab_set сразу
         self.transient(parent)
-        self.after(100, self._setup_dialog)
 
         # Настройка сетки
         self.grid_columnconfigure(0, weight=1)
@@ -572,64 +863,34 @@ class AddEditDialog(customtkinter.CTkToplevel):
                                            command=self.save_house)
         save_btn.grid(row=0, column=1, padx=(10, 0), sticky="ew")
 
-    def create_form_field_with_label(self, label_text, field_name, row, placeholder=None):
-        """Создает label и поле ввода"""
-        # Label
-        label = customtkinter.CTkLabel(self,
-                                       text=label_text,
-                                       text_color="#111318",
-                                       font=("Arial", 12, "bold"),
-                                       anchor="w")
-        label.grid(row=row, column=0, padx=20, pady=(5, 0), sticky="w")
+        # Через 100мс завершаем настройку
+        self.after(100, self.finalize_dialog)
 
-        # Entry field
-        if placeholder is None:
-            placeholder = label_text
-
-        entry = customtkinter.CTkEntry(self,
-                                       placeholder_text=placeholder,
-                                       fg_color="#F0F0F0",
-                                       text_color="#111318",
-                                       placeholder_text_color="#6B7280",
-                                       border_color="#F0F0F0",
-                                       height=40)
-        entry.grid(row=row + 1, column=0, padx=20, pady=(2, 10), sticky="ew")
-
-        # Сохраняем поле как атрибут
-        setattr(self, f"{field_name}_entry", entry)
-        return entry
-
-    def select_image(self):
-        """Выбор изображения"""
-        file_path = filedialog.askopenfilename(
-            title="Выберите изображение",
-            filetypes=[("Image files", "*.jpg *.jpeg *.png *.gif *.bmp")]
-        )
-        if file_path:
-            self.image_path = file_path
-            self.image_path_label.configure(
-                text=f"Выбрано: {os.path.basename(file_path)}",
-                text_color="#111318"
-            )
-
-    def remove_image(self):
-        """Удаление выбранного изображения"""
-        self.image_path = None
-        self.image_path_label.configure(
-            text="Изображение не выбрано",
-            text_color="#6B7280"
-        )
+    def finalize_dialog(self):
+        """Завершает настройку диалога после его отображения"""
+        self._setup_dialog()
 
     def _setup_dialog(self):
         """Настройка диалога после полной инициализации"""
         self.grab_set()
         self.focus_set()
+        self.lift()
 
         # Центрируем относительно родительского окна
         self.update_idletasks()
-        x = self.parent.winfo_x() + (self.parent.winfo_width() - self.winfo_width()) // 2
-        y = self.parent.winfo_y() + (self.parent.winfo_height() - self.winfo_height()) // 2
+        parent_x = self.parent.winfo_rootx()
+        parent_y = self.parent.winfo_rooty()
+        parent_width = self.parent.winfo_width()
+        parent_height = self.parent.winfo_height()
+
+        width = self.winfo_width()
+        height = self.winfo_height()
+
+        x = parent_x + (parent_width - width) // 2
+        y = parent_y + (parent_height - height) // 2
+
         self.geometry(f"+{x}+{y}")
+
 
     def fill_form(self, house):
         house_id, address, area, floor, rooms, price, image_path, verified, created_by = house
@@ -667,7 +928,7 @@ class AddEditDialog(customtkinter.CTkToplevel):
             return
 
         # Получаем ID пользователя для created_by
-        conn = sqlite3.connect('databases/users.db')
+        conn = sqlite3.connect('databases/app.db')
         cursor = conn.cursor()
         cursor.execute('SELECT id FROM users WHERE username = ?', (self.username,))
         user_result = cursor.fetchone()

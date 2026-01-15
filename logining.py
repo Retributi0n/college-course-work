@@ -1,8 +1,8 @@
 import customtkinter
 import hashlib
-from databases.auth_database import search_user
+from databases.app_database import search_user
 from main_content import MainApp
-from databases.main_content_database import get_user_group
+from databases.app_database import get_user_group
 
 
 def set_window_icon(window):

@@ -4,7 +4,7 @@ import threading
 import time
 import re
 
-from databases import auth_database
+from databases import app_database
 
 
 def set_window_icon(window):
@@ -207,7 +207,7 @@ class RegisterWindow(customtkinter.CTk):
         hex_digest = hash_object.hexdigest()
 
         # Добавляем пользователя в базу
-        if auth_database.add_user(username, hex_digest, 'user'):
+        if app_database.add_user(username, hex_digest, 'user'):
             # Успешная регистрация
             self.progressbar.grid()
             self.countdown_label.grid()

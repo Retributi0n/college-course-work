@@ -32,12 +32,75 @@ CREATE TABLE IF NOT EXISTS houses (
 
 conn.commit()
 
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS bookings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    house_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    start_date TEXT NOT NULL,    -- YYYY-MM-DD
+    end_date TEXT NOT NULL,      -- YYYY-MM-DD
+    total_price INTEGER NOT NULL,
+    status TEXT DEFAULT 'active', -- active/cancelled/completed
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (house_id) REFERENCES houses(id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+)
+''')
+conn.commit()
+
+
+def add_booking(house_id, username, start_date, end_date, total_price):
+    """Добавляет бронирование"""
+    conn = sqlite3.connect('databases/app.db')
+    cursor = conn.cursor()
+
+    # Получаем user_id по username
+    cursor.execute("SELECT id FROM users WHERE username = ?", (username,))
+    user_result = cursor.fetchone()
+
+    if not user_result:
+        return False
+
+    user_id = user_result[0]
+
+    try:
+        cursor.execute('''
+            INSERT INTO bookings (house_id, user_id, start_date, end_date, total_price)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (house_id, user_id, start_date, end_date, total_price))
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"Ошибка бронирования: {e}")
+        return False
+    finally:
+        conn.close()
+
+
+def get_user_bookings(username):
+    """Возвращает бронирования пользователя"""
+    conn = sqlite3.connect('databases/app.db')
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        SELECT b.*, h.address, h.price 
+        FROM bookings b
+        JOIN houses h ON b.house_id = h.id
+        JOIN users u ON b.user_id = u.id
+        WHERE u.username = ?
+        ORDER BY b.created_at DESC
+    ''', (username,))
+
+    bookings = cursor.fetchall()
+    conn.close()
+    return bookings
+
 # Функции для работы с пользователями (из auth_database.py)
 def add_user(username, password, user_group='user'):
     hash_object = hashlib.sha256(password.encode())
     hex_digest = hash_object.hexdigest()
 
-    local_conn = sqlite3.connect('app.db')
+    local_conn = sqlite3.connect('databases/app.db', check_same_thread=False)
     local_cursor = local_conn.cursor()
 
     local_cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
@@ -65,7 +128,7 @@ def search_user(username, password):
     hash_object = hashlib.sha256(password.encode())
     hex_digest = hash_object.hexdigest()
 
-    local_conn = sqlite3.connect('app.db')
+    local_conn = sqlite3.connect('databases/app.db', check_same_thread=False)
     local_cursor = local_conn.cursor()
 
     try:
@@ -85,7 +148,7 @@ def search_user(username, password):
 
 # Функции для работы с объектами недвижимости (из main_content_database.py)
 def add_object(address, area, floor, rooms_amount, price, image_path=None, created_by=None):
-    local_conn = sqlite3.connect('app.db')
+    local_conn = sqlite3.connect('databases/app.db')
     local_cursor = local_conn.cursor()
 
     local_cursor.execute('SELECT * FROM houses WHERE address = ?', (address,))
@@ -111,7 +174,7 @@ def add_object(address, area, floor, rooms_amount, price, image_path=None, creat
         return False
 
 def change_object_info(house_id, address, area, floor, rooms_amount, price, image_path=None):
-    local_conn = sqlite3.connect('app.db')
+    local_conn = sqlite3.connect('databases/app.db')
     local_cursor = local_conn.cursor()
 
     try:
@@ -130,7 +193,7 @@ def change_object_info(house_id, address, area, floor, rooms_amount, price, imag
         local_conn.close()
 
 def delete_object(id):
-    local_conn = sqlite3.connect('app.db')
+    local_conn = sqlite3.connect('databases/app.db')
     local_cursor = local_conn.cursor()
 
     try:
@@ -151,7 +214,7 @@ def delete_object(id):
         local_conn.close()
 
 def verify_object(house_id):
-    local_conn = sqlite3.connect('app.db')
+    local_conn = sqlite3.connect('databases/app.db')
     local_cursor = local_conn.cursor()
 
     try:
@@ -166,7 +229,7 @@ def verify_object(house_id):
         local_conn.close()
 
 def get_user_group(username):
-    local_conn = sqlite3.connect('app.db')
+    local_conn = sqlite3.connect('databases/app.db')
     local_cursor = local_conn.cursor()
 
     try:
