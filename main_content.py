@@ -36,7 +36,7 @@ class MainApp(customtkinter.CTk):
         self.username = username
         self.user_group = user_group
         self.title("Domovoy - Бронирование домов")
-        self.geometry("1280x1020")
+        self.geometry("1600x1020")
         self.configure(fg_color="#FFFFFF")
         set_window_icon(self)
 
@@ -47,6 +47,31 @@ class MainApp(customtkinter.CTk):
         self.setup_sidebar()
         self.setup_main_content()
         self.load_houses()
+
+    def update_house_rating(self, house_id):
+        """
+        Обновляет отображение рейтинга для конкретного дома
+        Вызывается после добавления отзыва
+        """
+        # Перезагружаем все дома (простой способ)
+        self.load_houses()
+
+        # Или можно найти конкретную карточку и обновить только ее
+        # Но для простоты используем перезагрузку
+
+    def show_house_reviews(self, house_id, address):
+        """Показывает окно с отзывами о доме"""
+        try:
+            from review_dialog import ReviewsWindow
+            ReviewsWindow(
+                self,
+                house_id,
+                address,
+                current_username=self.username  # Передаем имя пользователя
+            )
+        except Exception as e:
+            print(f"Ошибка при открытии отзывов: {e}")
+            messagebox.showerror("Ошибка", "Не удалось открыть окно отзывов")
 
     def logout(self):
         """Выход из аккаунта"""
@@ -790,7 +815,6 @@ class MainApp(customtkinter.CTk):
                 where_conditions.append("rooms_amount = ?")
                 params.append(filters['rooms_amount'])
             if filters.get('price'):
-                # Преобразуем текстовую цену в число для сравнения
                 where_conditions.append("CAST(REPLACE(REPLACE(price, '₽', ''), ' ', '') AS INTEGER) <= ?")
                 params.append(filters['price'])
 
@@ -852,7 +876,7 @@ class MainApp(customtkinter.CTk):
                     image_label = customtkinter.CTkLabel(card,
                                                          image=house_image,
                                                          text="",
-                                                         fg_color="transparent")  # прозрачный фон
+                                                         fg_color="transparent")
                     image_label.grid(row=0, column=0, rowspan=3, padx=15, pady=15, sticky="nsew")
                 else:
                     raise Exception("Не удалось создать скругленное изображение")
@@ -881,9 +905,43 @@ class MainApp(customtkinter.CTk):
                                                anchor="w")
         address_label.grid(row=0, column=1, columnspan=2, padx=15, pady=(15, 5), sticky="w")
 
+        # ===== РЕЙТИНГ =====
+        from databases.app_database import get_house_average_rating
+        rating_info = get_house_average_rating(house_id)
+
+        avg_rating = rating_info['average']
+        reviews_count = rating_info['count']
+
+        # Фрейм для рейтинга и кнопки просмотра
+        rating_frame = customtkinter.CTkFrame(card, fg_color="transparent")
+        rating_frame.grid(row=0, column=2, padx=(0, 15), pady=(15, 5), sticky="e")
+
+        if reviews_count > 0:
+            rating_text = f"{avg_rating} ⭐ ({reviews_count})"
+        else:
+            rating_text = "0.0 ⭐ (0)"
+
+        rating_label = customtkinter.CTkLabel(
+            rating_frame,
+            text=rating_text,
+            text_color="#F59E0B",
+            font=("Arial", 12, "bold")
+        )
+        rating_label.pack(side="right", padx=(0, 5))
+
+        # Кнопка просмотра отзывов
+        view_reviews_btn = customtkinter.CTkButton(
+            rating_frame,
+            text="👁",
+            width=30,
+            height=30,
+            fg_color="#3B82F6",
+            command=lambda hid=house_id, addr=address: self.show_house_reviews(hid, addr)
+        )
+        view_reviews_btn.pack(side="right", padx=(0, 10))
+
         # КНОПКА ИЗБРАННОГО (только для зарегистрированных пользователей)
         if self.user_group in ['user']:
-            # Проверяем, в избранном ли этот дом
             from databases.app_database import is_favorite
             is_fav = is_favorite(self.username, house_id)
 
@@ -922,21 +980,21 @@ class MainApp(customtkinter.CTk):
         button_frame = customtkinter.CTkFrame(card, fg_color="transparent")
         button_frame.grid(row=2, column=2, padx=15, pady=(5, 15), sticky="e")
 
-        # НОВАЯ КНОПКА: Показать календарь
+        # Кнопка "Календарь"
         if self.user_group in ['user']:
             calendar_btn = customtkinter.CTkButton(
                 button_frame,
                 text="📅 Календарь",
                 width=100,
                 height=30,
-                fg_color="#8B5CF6",  # Фиолетовый
+                fg_color="#8B5CF6",
                 text_color="#FFFFFF",
                 font=("Arial", 12),
                 command=lambda h=house_id, a=address: self.show_calendar(h, a)
             )
             calendar_btn.pack(side="right", padx=5)
 
-        # Кнопка бронирования (для зарегистрированных пользователей)
+        # Кнопка бронирования
         if self.user_group in ['user']:
             book_btn = customtkinter.CTkButton(
                 button_frame,

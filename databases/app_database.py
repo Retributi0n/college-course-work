@@ -17,6 +17,24 @@ CREATE TABLE IF NOT EXISTS users (
     user_group VARCHAR NOT NULL
 )''')
 
+# В начало файла, после других CREATE TABLE
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS reviews (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    house_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    booking_id INTEGER UNIQUE,  -- Связь с конкретным бронированием
+    rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    comment TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (house_id) REFERENCES houses(id),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (booking_id) REFERENCES bookings(id),
+    UNIQUE(user_id, house_id)  -- Один отзыв на дом от пользователя
+)
+''')
+conn.commit()
+
 # Создаем таблицу объектов недвижимости
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS houses (
@@ -775,3 +793,180 @@ def get_favorites_count(username):
         return 0
     finally:
         conn.close()
+
+
+# ============ ФУНКЦИИ ДЛЯ ОТЗЫВОВ ============
+
+def add_review(username, house_id, booking_id, rating, comment):
+    """
+    Добавляет отзыв о доме
+    """
+    conn = sqlite3.connect('databases/app.db')
+    cursor = conn.cursor()
+
+    try:
+        # Получаем user_id
+        cursor.execute("SELECT id FROM users WHERE username = ?", (username,))
+        user = cursor.fetchone()
+
+        if not user:
+            print(f"❌ Пользователь {username} не найден")
+            return False
+
+        user_id = user[0]
+
+        # Проверяем, не оставлял ли пользователь уже отзыв для этого дома
+        cursor.execute('''
+            SELECT id FROM reviews 
+            WHERE user_id = ? AND house_id = ?
+        ''', (user_id, house_id))
+
+        if cursor.fetchone():
+            print(f"⚠️ Пользователь уже оставлял отзыв для этого дома")
+            return False
+
+        # Добавляем отзыв
+        cursor.execute('''
+            INSERT INTO reviews (house_id, user_id, booking_id, rating, comment)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (house_id, user_id, booking_id, rating, comment))
+
+        conn.commit()
+        review_id = cursor.lastrowid
+        print(f"✅ Отзыв добавлен! ID: {review_id}")
+        return review_id
+
+    except Exception as e:
+        print(f"❌ Ошибка при добавлении отзыва: {e}")
+        return False
+    finally:
+        conn.close()
+
+
+def get_house_reviews(house_id):
+    """
+    Возвращает все отзывы для конкретного дома
+    """
+    conn = sqlite3.connect('databases/app.db')
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        SELECT 
+            r.id,
+            r.rating,
+            r.comment,
+            r.created_at,
+            u.username,
+            u.id as user_id
+        FROM reviews r
+        JOIN users u ON r.user_id = u.id
+        WHERE r.house_id = ?
+        ORDER BY r.created_at DESC
+    ''', (house_id,))
+
+    reviews = cursor.fetchall()
+    conn.close()
+
+    # Преобразуем в список словарей
+    result = []
+    for r in reviews:
+        result.append({
+            'id': r[0],
+            'rating': r[1],
+            'comment': r[2],
+            'created_at': r[3],
+            'username': r[4],
+            'user_id': r[5]
+        })
+
+    return result
+
+
+def get_house_average_rating(house_id):
+    """
+    Возвращает средний рейтинг дома
+    """
+    conn = sqlite3.connect('databases/app.db')
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        SELECT AVG(rating), COUNT(*) FROM reviews
+        WHERE house_id = ?
+    ''', (house_id,))
+
+    avg, count = cursor.fetchone()
+    conn.close()
+
+    return {
+        'average': round(avg, 1) if avg else 0,
+        'count': count or 0
+    }
+
+
+def get_user_review_for_booking(username, booking_id):
+    """
+    Проверяет, оставлял ли пользователь отзыв для этого бронирования
+    """
+    conn = sqlite3.connect('databases/app.db')
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        SELECT r.id, r.rating, r.comment, r.house_id
+        FROM reviews r
+        JOIN users u ON r.user_id = u.id
+        WHERE u.username = ? AND r.booking_id = ?
+    ''', (username, booking_id))
+
+    review = cursor.fetchone()
+    conn.close()
+
+    if review:
+        return {
+            'id': review[0],
+            'rating': review[1],
+            'comment': review[2],
+            'house_id': review[3]
+        }
+    return None
+
+
+def get_completed_bookings_for_review(username):
+    """
+    Возвращает завершенные бронирования, на которые можно оставить отзыв
+    """
+    conn = sqlite3.connect('databases/app.db')
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        SELECT 
+            b.id,
+            b.house_id,
+            h.address,
+            b.start_date,
+            b.end_date,
+            b.total_price,
+            (SELECT COUNT(*) FROM reviews WHERE booking_id = b.id) as has_review
+        FROM bookings b
+        JOIN houses h ON b.house_id = h.id
+        JOIN users u ON b.user_id = u.id
+        WHERE u.username = ? 
+        AND b.status = 'completed'
+        ORDER BY b.end_date DESC
+    ''', (username,))
+
+    bookings = cursor.fetchall()
+    conn.close()
+
+    result = []
+    for b in bookings:
+        result.append({
+            'booking_id': b[0],
+            'house_id': b[1],
+            'address': b[2],
+            'start_date': b[3],
+            'end_date': b[4],
+            'total_price': b[5],
+            'has_review': b[6] > 0
+        })
+
+    return result

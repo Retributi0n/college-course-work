@@ -73,6 +73,21 @@ class BookingsWindow(customtkinter.CTkToplevel):
         # Загружаем бронирования
         self.load_bookings()
 
+    def leave_review(self, booking):
+        """Открывает окно для оставления отзыва"""
+        try:
+            from review_dialog import ReviewDialog
+            ReviewDialog(
+                self,
+                self.username,
+                booking['house_id'],
+                booking['address'],
+                booking_id=booking['id']
+            )
+        except Exception as e:
+            print(f"Ошибка при открытии окна отзыва: {e}")
+            messagebox.showerror("Ошибка", "Не удалось открыть окно отзыва")
+
     def finalize_dialog(self):
         """Завершает настройку диалога"""
         self.center_window()
@@ -249,6 +264,33 @@ class BookingsWindow(customtkinter.CTkToplevel):
             command=lambda b=booking: self.show_booking_details(b['id'])
         )
         details_btn.pack(side="right", padx=5)
+        # В методе create_booking_card, после кнопки "Подробнее":
+
+        # Кнопка "Оставить отзыв" (только для завершенных бронирований без отзыва)
+        if booking['status'] == 'completed':
+            from databases.app_database import get_user_review_for_booking
+            review = get_user_review_for_booking(self.username, booking['id'])
+
+            if not review:
+                review_btn = customtkinter.CTkButton(
+                    button_frame,
+                    text="⭐ Оставить отзыв",
+                    width=120,
+                    height=30,
+                    fg_color="#F59E0B",
+                    command=lambda b=booking: self.leave_review(b)
+                )
+                review_btn.pack(side="right", padx=5)
+            else:
+                # Если отзыв уже есть, показываем "Отзыв оставлен"
+                review_label = customtkinter.CTkLabel(
+                    button_frame,
+                    text="✅ Отзыв оставлен",
+                    text_color="#10B981",
+                    font=("Arial", 10, "bold")
+                )
+                review_label.pack(side="right", padx=5)
+
 
         # Кнопка "Отменить" (только для активных)
         if booking['status'] == 'active':
