@@ -1,4 +1,5 @@
 import customtkinter
+from datetime import timedelta
 import sqlite3
 import os
 from tkinter import messagebox, filedialog
@@ -35,7 +36,7 @@ class MainApp(customtkinter.CTk):
         self.username = username
         self.user_group = user_group
         self.title("Domovoy - Бронирование домов")
-        self.geometry("1280x720")
+        self.geometry("1280x1020")
         self.configure(fg_color="#FFFFFF")
         set_window_icon(self)
 
@@ -46,6 +47,132 @@ class MainApp(customtkinter.CTk):
         self.setup_sidebar()
         self.setup_main_content()
         self.load_houses()
+
+    def logout(self):
+        """Выход из аккаунта"""
+        result = messagebox.askyesno(
+            "Подтверждение",
+            "Вы действительно хотите выйти из аккаунта?"
+        )
+
+        if result:
+            # Закрываем текущее окно
+            self.destroy()
+
+            # Открываем окно входа
+            from logining import LoginWindow
+            login_window = LoginWindow()
+            login_window.mainloop()
+
+    def update_favorites_counter(self):
+        """Обновляет счетчик избранного прямо в кнопке"""
+        from databases.app_database import get_favorites_count
+
+        try:
+            # Получаем актуальное количество избранного
+            fav_count = get_favorites_count(self.username)
+            print(f"🔄 Обновление счетчика: {fav_count}")
+
+            # Получаем боковую панель
+            sidebar = self.grid_slaves(row=0, column=0)[0]
+
+            # Перебираем все дочерние элементы в поисках кнопки избранного
+            for child in sidebar.winfo_children():
+                # Пропускаем не-кнопки
+                if not isinstance(child, customtkinter.CTkButton):
+                    continue
+
+                try:
+                    btn_text = child.cget("text")
+                    # Ищем кнопку с избранным (по символу звезды)
+                    if btn_text and "⭐" in btn_text:
+                        # Формируем новый текст
+                        if fav_count > 0:
+                            new_text = f"⭐ Избранное • {fav_count}"
+                        else:
+                            new_text = "⭐ Избранное"
+
+                        print(f"  Обновляем текст: '{btn_text}' -> '{new_text}'")
+                        child.configure(text=new_text)
+
+                        # Принудительно обновляем кнопку
+                        child.update()
+                        break
+                except Exception as e:
+                    print(f"  Ошибка при проверке кнопки: {e}")
+                    continue
+
+        except Exception as e:
+            print(f"❌ Ошибка при обновлении счетчика: {e}")
+
+    def show_all_houses(self):
+        """Возврат к показу всех домов"""
+        self.load_houses()
+
+    def toggle_favorite(self, house_id, card):
+        """
+        Добавляет или удаляет дом из избранного (без всплывающих окон)
+        """
+        from databases.app_database import add_to_favorites, remove_from_favorites, is_favorite, get_favorites_count
+
+        # Проверяем текущий статус
+        is_fav = is_favorite(self.username, house_id)
+
+        # Сохраняем текущее количество до операции
+        old_count = get_favorites_count(self.username)
+
+        if is_fav:
+            # Удаляем из избранного
+            if remove_from_favorites(self.username, house_id):
+                print(f"✅ Дом {house_id} удален из избранного")
+                # Обновляем кнопку в карточке
+                for child in card.winfo_children():
+                    if isinstance(child, customtkinter.CTkButton):
+                        try:
+                            btn_text = child.cget("text")
+                            if btn_text in ["⭐", "☆"]:
+                                child.configure(text="☆", fg_color="#6B7280")
+                                break
+                        except:
+                            continue
+
+                # Проверяем, не был ли это последний элемент
+                new_count = get_favorites_count(self.username)
+
+                # Если мы в режиме просмотра избранного
+                try:
+                    current_title = self.houses_frame.master.winfo_children()[0].cget("text")
+                    if "⭐ Избранное" in current_title:
+                        if new_count == 0:
+                            # Если это был последний элемент, показываем пустой список
+                            self.show_favorites()
+                        else:
+                            # Иначе просто обновляем счетчик и заголовок
+                            title_label = self.houses_frame.master.winfo_children()[0]
+                            if isinstance(title_label, customtkinter.CTkLabel):
+                                title_label.configure(text=f"⭐ Избранное ({new_count})")
+                except:
+                    pass
+        else:
+            # Добавляем в избранное
+            if add_to_favorites(self.username, house_id):
+                print(f"✅ Дом {house_id} добавлен в избранное")
+                # Обновляем кнопку в карточке
+                for child in card.winfo_children():
+                    if isinstance(child, customtkinter.CTkButton):
+                        try:
+                            btn_text = child.cget("text")
+                            if btn_text in ["⭐", "☆"]:
+                                child.configure(text="⭐", fg_color="#F59E0B")
+                                break
+                        except:
+                            continue
+
+        # Обновляем счетчик в боковой панели
+        self.update_favorites_counter()
+
+        # Принудительно обновляем интерфейс
+        self.update_idletasks()
 
     def create_rounded_image(self, image_path, size, corner_radius=15):
         """Создает изображение со скругленными углами"""
@@ -127,6 +254,11 @@ class MainApp(customtkinter.CTk):
         sidebar.grid(row=0, column=0, sticky="nsew", padx=(0, 1))
         sidebar.grid_propagate(False)
 
+        # Настраиваем веса строк для правильного расположения
+        sidebar.grid_rowconfigure(98, weight=0)  # Все обычные строки
+        sidebar.grid_rowconfigure(99, weight=1)  # Растягивающаяся строка (пустая)
+        sidebar.grid_rowconfigure(100, weight=0)  # Нижний фрейм с кнопкой выхода
+
         # Информация о пользователе
         user_info_label = customtkinter.CTkLabel(sidebar,
                                                  text=f"Пользователь: {self.username}\nГруппа: {self.user_group}",
@@ -205,46 +337,117 @@ class MainApp(customtkinter.CTk):
                                                  height=40)
             add_button.grid(row=8, column=0, padx=20, pady=(20, 5), sticky="ew")
 
-        # Кнопка просмотра непроверенных (только для админа)
+        # ===== ДЛЯ ОБЫЧНЫХ ПОЛЬЗОВАТЕЛЕЙ (НЕ АДМИН) =====
+        if self.user_group == 'user':
+            # Кнопка "Мои бронирования"
+            my_bookings_btn = customtkinter.CTkButton(
+                sidebar,
+                text="📋 Мои бронирования",
+                command=self.show_my_bookings,
+                fg_color="#3B82F6",
+                text_color="#FFFFFF",
+                height=40
+            )
+            my_bookings_btn.grid(row=9, column=0, padx=20, pady=5, sticky="ew")
+
+            # Кнопка "Избранное"
+            from databases.app_database import get_favorites_count
+            fav_count = get_favorites_count(self.username)
+            btn_text = "⭐ Избранное"
+            if fav_count > 0:
+                btn_text = f"⭐ Избранное • {fav_count}"
+
+            favorites_btn = customtkinter.CTkButton(
+                sidebar,
+                text=btn_text,
+                command=self.show_favorites,
+                fg_color="#F59E0B",
+                text_color="#FFFFFF",
+                height=40,
+                anchor="w"
+            )
+            favorites_btn.grid(row=10, column=0, padx=20, pady=5, sticky="ew")
+
+        # ===== ДЛЯ АДМИНИСТРАТОРА =====
         if self.user_group == 'admin':
-            unverified_button = customtkinter.CTkButton(sidebar,
-                                                        text="Непроверенные объекты",
-                                                        command=self.show_unverified,
-                                                        fg_color="#F59E0B",
-                                                        text_color="#FFFFFF",
-                                                        height=40)
+            # Кнопка просмотра непроверенных объектов
+            unverified_button = customtkinter.CTkButton(
+                sidebar,
+                text="⏳ Непроверенные объекты",
+                command=self.show_unverified,
+                fg_color="#F59E0B",
+                text_color="#FFFFFF",
+                height=40
+            )
             unverified_button.grid(row=9, column=0, padx=20, pady=5, sticky="ew")
 
-        # Админская панель (только для админа)
-        if self.user_group == 'admin':
-            # Разделитель
+            # Кнопка просмотра всех бронирований
+            all_bookings_btn = customtkinter.CTkButton(
+                sidebar,
+                text="📊 Все бронирования",
+                command=self.show_all_bookings,
+                fg_color="#8B5CF6",
+                text_color="#FFFFFF",
+                height=40
+            )
+            all_bookings_btn.grid(row=10, column=0, padx=20, pady=5, sticky="ew")
+
+            # Разделитель админки
             separator = customtkinter.CTkFrame(sidebar, height=2, fg_color="#D1D5DB")
-            separator.grid(row=10, column=0, padx=20, pady=20, sticky="ew")
+            separator.grid(row=11, column=0, padx=20, pady=20, sticky="ew")
 
             # Заголовок админки
-            admin_label = customtkinter.CTkLabel(sidebar,
-                                                 text="Админ-панель",
-                                                 text_color="#111318",
-                                                 font=("Arial", 16, "bold"))
-            admin_label.grid(row=11, column=0, padx=20, pady=(0, 10), sticky="w")
+            admin_label = customtkinter.CTkLabel(
+                sidebar,
+                text="Админ-панель",
+                text_color="#111318",
+                font=("Arial", 16, "bold")
+            )
+            admin_label.grid(row=12, column=0, padx=20, pady=(0, 10), sticky="w")
 
             # Кнопка добавления пользователя
-            add_user_btn = customtkinter.CTkButton(sidebar,
-                                                   text="➕ Добавить пользователя",
-                                                   command=self.show_add_user_dialog,
-                                                   fg_color="#8B5CF6",
-                                                   text_color="#FFFFFF",
-                                                   height=40)
-            add_user_btn.grid(row=12, column=0, padx=20, pady=5, sticky="ew")
+            add_user_btn = customtkinter.CTkButton(
+                sidebar,
+                text="➕ Добавить пользователя",
+                command=self.show_add_user_dialog,
+                fg_color="#8B5CF6",
+                text_color="#FFFFFF",
+                height=40
+            )
+            add_user_btn.grid(row=13, column=0, padx=20, pady=5, sticky="ew")
 
-            # Кнопка просмотра всех пользователей (ДОБАВЬТЕ ЭТУ ФУНКЦИЮ В КЛАСС MainApp)
-            view_users_btn = customtkinter.CTkButton(sidebar,
-                                                     text="👥 Все пользователи",
-                                                     command=self.show_all_users,
-                                                     fg_color="#6366F1",
-                                                     text_color="#FFFFFF",
-                                                     height=40)
-            view_users_btn.grid(row=13, column=0, padx=20, pady=5, sticky="ew")
+            # Кнопка просмотра всех пользователей
+            view_users_btn = customtkinter.CTkButton(
+                sidebar,
+                text="👥 Все пользователи",
+                command=self.show_all_users,
+                fg_color="#6366F1",
+                text_color="#FFFFFF",
+                height=40
+            )
+            view_users_btn.grid(row=14, column=0, padx=20, pady=5, sticky="ew")
+
+        # ===== КНОПКА ВЫХОДА (ДЛЯ ВСЕХ) =====
+        bottom_frame = customtkinter.CTkFrame(sidebar, fg_color="transparent")
+        bottom_frame.grid(row=100, column=0, sticky="ew", padx=20, pady=(20, 20))
+        bottom_frame.grid_columnconfigure(0, weight=1)
+
+        # Разделитель
+        separator_exit = customtkinter.CTkFrame(bottom_frame, height=2, fg_color="#D1D5DB")
+        separator_exit.grid(row=0, column=0, sticky="ew", pady=(0, 10))
+
+        # Кнопка выхода
+        exit_btn = customtkinter.CTkButton(
+            bottom_frame,
+            text="🚪 Выйти из аккаунта",
+            command=self.logout,
+            fg_color="#EF4444",
+            text_color="#FFFFFF",
+            height=40,
+            font=("Arial", 12, "bold")
+        )
+        exit_btn.grid(row=1, column=0, sticky="ew")
+
 
     def setup_main_content(self):
         # Основная область контента
@@ -268,6 +471,91 @@ class MainApp(customtkinter.CTk):
 
         # Привязка колесика мыши для скроллинга
         self.bind_mouse_wheel()
+
+    def show_my_bookings(self):
+        """Показывает бронирования текущего пользователя"""
+        try:
+            from bookings_view import BookingsWindow
+            BookingsWindow(self, self.username, self.user_group)
+        except Exception as e:
+            print(f"Ошибка при открытии бронирований: {e}")
+            messagebox.showerror("Ошибка", "Не удалось открыть окно бронирований")
+
+    def show_all_bookings(self):
+        """Для админа - показывает все бронирования"""
+        if self.user_group == 'admin':
+            try:
+                from bookings_view import AdminBookingsWindow
+                AdminBookingsWindow(self, self.username)
+            except Exception as e:
+                print(f"Ошибка при открытии всех бронирований: {e}")
+                messagebox.showerror("Ошибка", "Не удалось открыть окно всех бронирований")
+        else:
+            messagebox.showerror("Ошибка", "Эта функция доступна только администраторам")
+
+    def show_favorites(self):
+        """
+        Показывает только избранные дома
+        """
+        from databases.app_database import get_user_favorites
+
+        # Очищаем существующие карточки
+        for widget in self.houses_frame.winfo_children():
+            widget.destroy()
+
+        # Загружаем избранные дома
+        favorites = get_user_favorites(self.username)
+
+        if not favorites:
+            # Используем pack для сообщения об отсутствии избранного
+            no_data_label = customtkinter.CTkLabel(
+                self.houses_frame,
+                text="⭐ У вас пока нет избранных домов",
+                text_color="#6B7280",
+                font=("Arial", 16)
+            )
+            no_data_label.pack(pady=50)
+
+            # Добавляем кнопку "Назад" отдельно
+            back_btn = customtkinter.CTkButton(
+                self.houses_frame,
+                text="← Назад к общему списку",
+                command=self.show_all_houses,
+                fg_color="#6B7280",
+                width=200,
+                height=35
+            )
+            back_btn.pack(pady=10)
+
+            # Обновляем счетчик (будет 0)
+            self.update_favorites_counter()
+            return  # Выходим из метода, дальше ничего не выполняем
+
+        # Если есть избранные дома - создаем карточки
+        for i, house in enumerate(favorites):
+            self.create_house_card(house, i)
+
+        # Добавляем кнопку "Назад" после всех карточек
+        back_frame = customtkinter.CTkFrame(self.houses_frame, fg_color="transparent")
+        back_frame.grid(row=len(favorites), column=0, pady=20)
+
+        back_btn = customtkinter.CTkButton(
+            back_frame,
+            text="← Назад к общему списку",
+            command=self.show_all_houses,
+            fg_color="#6B7280",
+            width=200,
+            height=35
+        )
+        back_btn.pack()
+
+        # Обновляем заголовок
+        title_label = self.houses_frame.master.winfo_children()[0]
+        if isinstance(title_label, customtkinter.CTkLabel):
+            title_label.configure(text=f"⭐ Избранное ({len(favorites)})")
+
+        # Обновляем счетчик в боковой панели
+        self.update_favorites_counter()
 
     def show_add_user_dialog(self):
         """Открывает диалог добавления пользователя"""
@@ -467,6 +755,11 @@ class MainApp(customtkinter.CTk):
         for widget in self.houses_frame.winfo_children():
             widget.destroy()
 
+        # Сбрасываем заголовок на стандартный
+        title_label = self.houses_frame.master.winfo_children()[0]
+        if isinstance(title_label, customtkinter.CTkLabel):
+            title_label.configure(text="Дома для бронирования")
+
         # Загружаем данные из БД
         conn = sqlite3.connect('databases/app.db')
         cursor = conn.cursor()
@@ -588,6 +881,25 @@ class MainApp(customtkinter.CTk):
                                                anchor="w")
         address_label.grid(row=0, column=1, columnspan=2, padx=15, pady=(15, 5), sticky="w")
 
+        # КНОПКА ИЗБРАННОГО (только для зарегистрированных пользователей)
+        if self.user_group in ['user']:
+            # Проверяем, в избранном ли этот дом
+            from databases.app_database import is_favorite
+            is_fav = is_favorite(self.username, house_id)
+
+            fav_btn = customtkinter.CTkButton(
+                card,
+                text="⭐" if is_fav else "☆",
+                width=40,
+                height=40,
+                fg_color="#F59E0B" if is_fav else "#6B7280",
+                text_color="#FFFFFF",
+                font=("Arial", 16),
+                command=lambda hid=house_id, btn=None: self.toggle_favorite(hid, card)
+            )
+            fav_btn.grid(row=0, column=3, padx=(0, 15), pady=(15, 5), sticky="e")
+            fav_btn.lift()
+
         # Детали
         details_text = f"🏘️ Площадь (Кв/м): {area} | 🏢 Этаж: {floor} | 🚪 Комнат: {rooms}"
         details_label = customtkinter.CTkLabel(card,
@@ -607,23 +919,36 @@ class MainApp(customtkinter.CTk):
         price_label.grid(row=2, column=1, padx=15, pady=(5, 15), sticky="w")
 
         # Кнопки действий
-        # Кнопки действий
         button_frame = customtkinter.CTkFrame(card, fg_color="transparent")
         button_frame.grid(row=2, column=2, padx=15, pady=(5, 15), sticky="e")
 
+        # НОВАЯ КНОПКА: Показать календарь
+        if self.user_group in ['user']:
+            calendar_btn = customtkinter.CTkButton(
+                button_frame,
+                text="📅 Календарь",
+                width=100,
+                height=30,
+                fg_color="#8B5CF6",  # Фиолетовый
+                text_color="#FFFFFF",
+                font=("Arial", 12),
+                command=lambda h=house_id, a=address: self.show_calendar(h, a)
+            )
+            calendar_btn.pack(side="right", padx=5)
+
         # Кнопка бронирования (для зарегистрированных пользователей)
-        if self.user_group in ['admin', 'user']:
+        if self.user_group in ['user']:
             book_btn = customtkinter.CTkButton(
                 button_frame,
                 text="📅 Забронировать",
                 width=140,
                 height=35,
-                fg_color="#10B981",  # Зеленый цвет вместо синего
+                fg_color="#10B981",
                 text_color="#FFFFFF",
                 font=("Arial", 12, "bold"),
                 command=lambda h=house: self.book_house(h)
             )
-            book_btn.pack(side="right", padx=(5, 0))
+            book_btn.pack(side="right", padx=5)
 
         # Кнопки админа
         if self.user_group == 'admin':
@@ -765,6 +1090,76 @@ class MainApp(customtkinter.CTk):
                 self.load_houses()
             else:
                 messagebox.showerror("Ошибка", "Не удалось удалить объект")
+
+    def show_calendar(self, house_id, address):
+        """Показывает календарь занятости для дома"""
+        from calendar_widget import AvailabilityCalendar
+
+        # Создаем новое окно
+        calendar_window = customtkinter.CTkToplevel(self)
+        calendar_window.title(f"Календарь занятости - {address}")
+        calendar_window.geometry("500x500")
+        calendar_window.configure(fg_color="#FFFFFF")
+        calendar_window.transient(self)
+
+        # Центрируем окно
+        calendar_window.update_idletasks()
+        x = self.winfo_rootx() + (self.winfo_width() - calendar_window.winfo_width()) // 2
+        y = self.winfo_rooty() + (self.winfo_height() - calendar_window.winfo_height()) // 2
+        calendar_window.geometry(f"+{x}+{y}")
+
+        # Добавляем календарь
+        calendar = AvailabilityCalendar(
+            calendar_window,
+            house_id,
+            on_date_selected=lambda d: self.on_date_selected_from_calendar(d, house_id, address)
+        )
+        calendar.pack(fill="both", expand=True, padx=20, pady=20)
+
+        # Кнопка закрытия
+        close_btn = customtkinter.CTkButton(
+            calendar_window,
+            text="Закрыть",
+            fg_color="#6B7280",
+            command=calendar_window.destroy
+        )
+        close_btn.pack(pady=(0, 20))
+
+    def on_date_selected_from_calendar(self, date, house_id, address):
+        """Обработчик выбора даты из календаря"""
+        from datetime import datetime
+
+        # Получаем полную информацию о доме
+        conn = sqlite3.connect('databases/app.db')
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM houses WHERE id = ?", (house_id,))
+        house = cursor.fetchone()
+        conn.close()
+
+        if house:
+            # Открываем окно бронирования с выбранной датой
+            from booking import BookingDialog
+            dialog = BookingDialog(self, house)
+
+            # Устанавливаем выбранную дату как дату заезда
+            dialog.start_day.delete(0, 'end')
+            dialog.start_day.insert(0, date.strftime("%d"))
+            dialog.start_month.delete(0, 'end')
+            dialog.start_month.insert(0, date.strftime("%m"))
+            dialog.start_year.delete(0, 'end')
+            dialog.start_year.insert(0, date.strftime("%Y"))
+
+            # Устанавливаем следующий день как дату выезда
+            next_day = date + timedelta(days=1)
+            dialog.end_day.delete(0, 'end')
+            dialog.end_day.insert(0, next_day.strftime("%d"))
+            dialog.end_month.delete(0, 'end')
+            dialog.end_month.insert(0, next_day.strftime("%m"))
+            dialog.end_year.delete(0, 'end')
+            dialog.end_year.insert(0, next_day.strftime("%Y"))
+
+            # Сразу рассчитываем стоимость
+            dialog.calculate_total()
 
 
 class AddEditDialog(customtkinter.CTkToplevel):
