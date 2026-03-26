@@ -4,3 +4,4 @@ __pycache__/
 .idea/
 databases/__pycache__/
 databases/app.db
+settings.cfg

@@ -81,6 +81,16 @@ CREATE TABLE IF NOT EXISTS favorites (
 )''')
 conn.commit()
 
+# Создаем таблицу настроек (простая, только для темы)
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS user_settings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    theme VARCHAR DEFAULT 'light',
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    UNIQUE(user_id)
+)''')
+conn.commit()
 
 def add_booking(house_id, username, start_date, end_date, total_price):
     """Добавляет бронирование и возвращает ID или False"""
@@ -970,3 +980,89 @@ def get_completed_bookings_for_review(username):
         })
 
     return result
+
+
+# ============ ФУНКЦИИ ДЛЯ ТЕМЫ ============
+
+def get_user_theme(username):
+    """
+    Возвращает тему пользователя
+    """
+    conn = sqlite3.connect('databases/app.db')
+    cursor = conn.cursor()
+
+    try:
+        # Получаем user_id
+        cursor.execute("SELECT id FROM users WHERE username = ?", (username,))
+        user = cursor.fetchone()
+
+        if not user:
+            print(f"❌ Пользователь {username} не найден")
+            return 'light'
+
+        user_id = user[0]
+
+        # Получаем тему
+        cursor.execute('''
+            SELECT theme FROM user_settings WHERE user_id = ?
+        ''', (user_id,))
+
+        result = cursor.fetchone()
+
+        if not result:
+            # Если настроек нет, создаем с темой по умолчанию
+            cursor.execute('''
+                INSERT INTO user_settings (user_id, theme) VALUES (?, 'light')
+            ''', (user_id,))
+            conn.commit()
+            return 'light'
+
+        return result[0] or 'light'
+
+    except Exception as e:
+        print(f"❌ Ошибка при получении темы: {e}")
+        return 'light'
+    finally:
+        conn.close()
+
+
+def update_user_theme(username, theme):
+    """
+    Обновляет тему пользователя
+    """
+    conn = sqlite3.connect('databases/app.db')
+    cursor = conn.cursor()
+
+    try:
+        # Получаем user_id
+        cursor.execute("SELECT id FROM users WHERE username = ?", (username,))
+        user = cursor.fetchone()
+
+        if not user:
+            print(f"❌ Пользователь {username} не найден")
+            return False
+
+        user_id = user[0]
+
+        # Проверяем, есть ли запись настроек
+        cursor.execute("SELECT COUNT(*) FROM user_settings WHERE user_id = ?", (user_id,))
+        exists = cursor.fetchone()[0] > 0
+
+        if exists:
+            cursor.execute('''
+                UPDATE user_settings SET theme = ? WHERE user_id = ?
+            ''', (theme, user_id))
+        else:
+            cursor.execute('''
+                INSERT INTO user_settings (user_id, theme) VALUES (?, ?)
+            ''', (user_id, theme))
+
+        conn.commit()
+        print(f"✅ Тема пользователя {username} обновлена на {theme}")
+        return True
+
+    except Exception as e:
+        print(f"❌ Ошибка при обновлении темы: {e}")
+        return False
+    finally:
+        conn.close()

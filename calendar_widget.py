@@ -5,7 +5,7 @@ import calendar
 from datetime import datetime, timedelta, date
 import sqlite3
 from tkinter import messagebox
-
+from theme_manager import theme_manager
 
 class AvailabilityCalendar(customtkinter.CTkFrame):
     """
@@ -16,7 +16,7 @@ class AvailabilityCalendar(customtkinter.CTkFrame):
     """
 
     def __init__(self, parent, house_id, on_date_selected=None):
-        super().__init__(parent, fg_color="#FFFFFF", corner_radius=10)
+        super().__init__(parent, fg_color=theme_manager.main_frame_color, corner_radius=10)
         self.parent = parent
         self.house_id = house_id
         self.on_date_selected = on_date_selected  # колбэк при выборе даты
@@ -76,7 +76,7 @@ class AvailabilityCalendar(customtkinter.CTkFrame):
             text="◀",
             width=30,
             height=30,
-            fg_color="#6B7280",
+            fg_color=theme_manager.button_secondary,
             command=self.prev_month
         )
         prev_btn.grid(row=0, column=0, padx=5)
@@ -85,7 +85,7 @@ class AvailabilityCalendar(customtkinter.CTkFrame):
         self.month_label = customtkinter.CTkLabel(
             header_frame,
             text=self.current_date.strftime("%B %Y"),
-            text_color="#111318",
+            text_color=theme_manager.text_color,
             font=("Arial", 16, "bold")
         )
         self.month_label.grid(row=0, column=1, padx=5)
@@ -96,7 +96,7 @@ class AvailabilityCalendar(customtkinter.CTkFrame):
             text="Сегодня",
             width=60,
             height=30,
-            fg_color="#3B82F6",
+            fg_color=theme_manager.button_info,
             command=self.go_to_today
         )
         today_btn.grid(row=0, column=2, padx=5)
@@ -107,43 +107,43 @@ class AvailabilityCalendar(customtkinter.CTkFrame):
             text="▶",
             width=30,
             height=30,
-            fg_color="#6B7280",
+            fg_color=theme_manager.button_secondary,
             command=self.next_month
         )
         next_btn.grid(row=0, column=3, padx=5)
 
         # Легенда
-        legend_frame = customtkinter.CTkFrame(self, fg_color="#F1F3F4", corner_radius=5)
+        legend_frame = customtkinter.CTkFrame(self, fg_color=theme_manager.sidebar_frame_color, corner_radius=5)
         legend_frame.grid(row=1, column=0, sticky="ew", padx=10, pady=5)
 
         # Свободно
         free_frame = customtkinter.CTkFrame(legend_frame, fg_color="transparent")
         free_frame.pack(side="left", padx=10, pady=5)
 
-        free_color = customtkinter.CTkFrame(free_frame, width=20, height=20, fg_color="#10B981", corner_radius=3)
+        free_color = customtkinter.CTkFrame(free_frame, width=20, height=20, fg_color=theme_manager.button_success, corner_radius=3)
         free_color.pack(side="left", padx=5)
 
-        free_label = customtkinter.CTkLabel(free_frame, text="Свободно", text_color="#111318")
+        free_label = customtkinter.CTkLabel(free_frame, text="Свободно", text_color=theme_manager.text_color)
         free_label.pack(side="left")
 
         # Занято
         booked_frame = customtkinter.CTkFrame(legend_frame, fg_color="transparent")
         booked_frame.pack(side="left", padx=10, pady=5)
 
-        booked_color = customtkinter.CTkFrame(booked_frame, width=20, height=20, fg_color="#EF4444", corner_radius=3)
+        booked_color = customtkinter.CTkFrame(booked_frame, width=20, height=20, fg_color=theme_manager.button_danger, corner_radius=3)
         booked_color.pack(side="left", padx=5)
 
-        booked_label = customtkinter.CTkLabel(booked_frame, text="Занято", text_color="#111318")
+        booked_label = customtkinter.CTkLabel(booked_frame, text="Занято", text_color=theme_manager.text_color)
         booked_label.pack(side="left")
 
         # Прошедшие
         past_frame = customtkinter.CTkFrame(legend_frame, fg_color="transparent")
         past_frame.pack(side="left", padx=10, pady=5)
 
-        past_color = customtkinter.CTkFrame(past_frame, width=20, height=20, fg_color="#D1D5DB", corner_radius=3)
+        past_color = customtkinter.CTkFrame(past_frame, width=20, height=20, fg_color=theme_manager.button_secondary, corner_radius=3)
         past_color.pack(side="left", padx=5)
 
-        past_label = customtkinter.CTkLabel(past_frame, text="Прошедшие", text_color="#111318")
+        past_label = customtkinter.CTkLabel(past_frame, text="Прошедшие", text_color=theme_manager.text_color)
         past_label.pack(side="left")
 
         # Контейнер для дней недели и дат - ИСПОЛЬЗУЕМ GRID
@@ -165,7 +165,7 @@ class AvailabilityCalendar(customtkinter.CTkFrame):
             day_label = customtkinter.CTkLabel(
                 self.calendar_frame,
                 text=day,
-                text_color="#6B7280",
+                text_color=theme_manager.text_color_secondary,
                 font=("Arial", 12, "bold")
             )
             day_label.grid(row=0, column=i, padx=2, pady=5, sticky="nsew")
@@ -192,20 +192,20 @@ class AvailabilityCalendar(customtkinter.CTkFrame):
 
             # Определяем цвет в зависимости от статуса
             if current_date < today:
-                bg_color = "#D1D5DB"  # Серый для прошедших
-                text_color = "#6B7280"
+                bg_color = theme_manager.button_secondary  # Серый для прошедших
+                text_color = theme_manager.text_color_secondary
                 state = "disabled"
                 hover_color = "#9CA3AF"
             elif current_date in self.booked_dates:
-                bg_color = "#EF4444"  # Красный для занятых
+                bg_color = theme_manager.button_danger  # Красный для занятых
                 text_color = "#FFFFFF"
                 state = "normal"
-                hover_color = "#DC2626"
+                hover_color = theme_manager.button_danger
             else:
-                bg_color = "#10B981"  # Зеленый для свободных
+                bg_color = theme_manager.button_success  # Зеленый для свободных
                 text_color = "#FFFFFF"
                 state = "normal"
-                hover_color = "#059669"
+                hover_color = theme_manager.button_success
 
             # Создаем кнопку для дня
             day_btn = customtkinter.CTkButton(
@@ -276,13 +276,13 @@ class DateRangeCalendar(AvailabilityCalendar):
         super().__init__(parent, house_id)
 
         # Добавляем информацию о выбранном диапазоне
-        self.selection_frame = customtkinter.CTkFrame(self, fg_color="#F1F3F4", corner_radius=5)
+        self.selection_frame = customtkinter.CTkFrame(self, fg_color=theme_manager.sidebar_frame_color, corner_radius=5)
         self.selection_frame.grid(row=3, column=0, sticky="ew", padx=10, pady=10)
 
         self.selection_label = customtkinter.CTkLabel(
             self.selection_frame,
             text="Выберите дату заезда",
-            text_color="#111318",
+            text_color=theme_manager.text_color,
             font=("Arial", 12)
         )
         self.selection_label.pack(pady=5)
@@ -293,7 +293,7 @@ class DateRangeCalendar(AvailabilityCalendar):
             text="Сбросить",
             width=80,
             height=30,
-            fg_color="#6B7280",
+            fg_color=theme_manager.button_secondary,
             command=self.reset_selection
         )
         self.reset_btn.pack(pady=5)

@@ -5,6 +5,7 @@ from tkinter import messagebox
 from datetime import datetime, timedelta
 import sqlite3
 from databases.app_database import add_booking, check_booking_availability
+from theme_manager import theme_manager
 
 
 class BookingDialog(customtkinter.CTkToplevel):
@@ -18,7 +19,7 @@ class BookingDialog(customtkinter.CTkToplevel):
 
         self.title(f"Бронирование: {address}")
         self.geometry("500x650")
-        self.configure(fg_color="#FFFFFF")
+        self.configure(fg_color=theme_manager.main_frame_color)
         self.resizable(False, False)
 
         # Не делаем grab_set сразу
@@ -31,19 +32,19 @@ class BookingDialog(customtkinter.CTkToplevel):
         # Заголовок
         title_label = customtkinter.CTkLabel(main_frame,
                                              text=f"Бронирование дома",
-                                             text_color="#111318",
+                                             text_color=theme_manager.text_color,
                                              font=("Arial", 20, "bold"))
         title_label.pack(pady=(0, 10))
 
         # Адрес
         address_label = customtkinter.CTkLabel(main_frame,
                                                text=f"📍 {address}",
-                                               text_color="#111318",
+                                               text_color=theme_manager.text_color,
                                                font=("Arial", 16))
         address_label.pack(pady=(0, 20))
 
         # Информация о доме
-        info_frame = customtkinter.CTkFrame(main_frame, fg_color="#F1F3F4", corner_radius=10)
+        info_frame = customtkinter.CTkFrame(main_frame, fg_color=theme_manager.house_frame_color, corner_radius=10)
         info_frame.pack(fill="x", pady=(0, 20))
 
         info_text = (
@@ -55,7 +56,7 @@ class BookingDialog(customtkinter.CTkToplevel):
 
         info_label = customtkinter.CTkLabel(info_frame,
                                             text=info_text,
-                                            text_color="#111318",
+                                            text_color=theme_manager.text_color,
                                             font=("Arial", 12),
                                             justify="left")
         info_label.pack(padx=15, pady=15, anchor="w")
@@ -70,6 +71,7 @@ class BookingDialog(customtkinter.CTkToplevel):
 
         start_label = customtkinter.CTkLabel(start_frame,
                                              text="📅 Дата заезда:",
+                                             text_color=theme_manager.text_color,
                                              font=("Arial", 12, "bold"))
         start_label.pack(side="left", padx=(0, 10))
 
@@ -95,6 +97,7 @@ class BookingDialog(customtkinter.CTkToplevel):
 
         end_label = customtkinter.CTkLabel(end_frame,
                                            text="📅 Дата выезда:",
+                                           text_color=theme_manager.text_color,
                                            font=("Arial", 12, "bold"))
         end_label.pack(side="left", padx=(0, 10))
 

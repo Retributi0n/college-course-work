@@ -3,6 +3,7 @@ import hashlib
 from databases.app_database import search_user
 from main_content import MainApp
 from databases.app_database import get_user_group
+from theme_manager import theme_manager
 
 
 def set_window_icon(window):
@@ -34,7 +35,7 @@ class LoginWindow(customtkinter.CTk):
         super().__init__()
         self.title("Domovoy - Вход в аккаунт")
         self.geometry("1280x720")
-        self.configure(fg_color="#FFFFFF")
+        self.configure(fg_color=theme_manager.main_frame_color)
         set_window_icon(self)
 
         custom_font = customtkinter.CTkFont(
@@ -51,17 +52,17 @@ class LoginWindow(customtkinter.CTk):
 
         self.title_label = customtkinter.CTkLabel(center_frame,
                                                   text="Вход в аккаунт",
-                                                  text_color="#111318",
+                                                  text_color=theme_manager.text_color,
                                                   font=("Arial", 24, "bold")  # Можно настроить шрифт
                                                   )
         self.title_label.grid(row=0, column=0, padx=20, pady=(0, 30))
 
         self.login = customtkinter.CTkEntry(center_frame,
                                             placeholder_text="Логин",
-                                            fg_color="#F0F0F0",
-                                            text_color="#111318",
-                                            placeholder_text_color="#6B7280",
-                                            border_color="#F0F0F0",
+                                            fg_color=theme_manager.house_frame_color,
+                                            text_color=theme_manager.text_color,
+                                            placeholder_text_color=theme_manager.text_color_secondary,
+                                            border_color=theme_manager.text_color_secondary,
                                             width=300,
                                             height=40,
                                             validate="key",
@@ -73,10 +74,10 @@ class LoginWindow(customtkinter.CTk):
 
         self.password = customtkinter.CTkEntry(center_frame,
                                                placeholder_text="Пароль",
-                                               fg_color="#F0F0F0",
-                                               text_color="#111318",
-                                               placeholder_text_color="#6B7280",
-                                               border_color="#F0F0F0",
+                                               fg_color=theme_manager.house_frame_color,
+                                               text_color=theme_manager.text_color,
+                                               placeholder_text_color=theme_manager.text_color_secondary,
+                                               border_color=theme_manager.text_color_secondary,
                                                width=300,
                                                height=40,
                                                show="✱︎",
@@ -93,7 +94,7 @@ class LoginWindow(customtkinter.CTk):
         self.auth = customtkinter.CTkButton(button_frame,
                                             text="Вход",
                                             command=self.auth_button_callback,
-                                            fg_color="#FF740F",
+                                            fg_color=theme_manager.button_primary,
                                             text_color="#111318",
                                             height=40,
                                             font=custom_font
@@ -104,7 +105,7 @@ class LoginWindow(customtkinter.CTk):
         self.registration = customtkinter.CTkButton(button_frame,
                                                     text="Регистрация",
                                                     command=self.reg_button_callback,
-                                                    fg_color="#FF740F",
+                                                    fg_color=theme_manager.button_primary,
                                                     text_color="#111318",
                                                     height=40,
                                                     font=custom_font

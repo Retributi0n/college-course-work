@@ -4,7 +4,39 @@ import sqlite3
 import os
 from tkinter import messagebox, filedialog
 from databases.app_database import add_object, change_object_info, delete_object, verify_object
+# Вместо локального ThemeManager, импортируйте из файла
+from theme_manager import theme_manager
 
+"""main_frame_color  = '#1E211E' #БЕЛОЙ СХЕМОЙ - #FFFFFF
+house_frame_color = '#242824' #БЕЛОЙ СХЕМОЙ - #FFFFFF
+card_body_color = '#1E211E'
+sidebar_frame_color = '#242824'
+text_color = '#a67d43'"""
+
+
+# Класс для управления темой
+# Вместо локального ThemeManager, импортируйте из файла
+from theme_manager import theme_manager
+
+# Вместо статичных цветов, используем менеджер тем
+def get_colors():
+    return {
+        'main_frame_color': theme_manager.main_frame_color,
+        'house_frame_color': theme_manager.house_frame_color,
+        'card_body_color': theme_manager.card_body_color,
+        'sidebar_frame_color': theme_manager.sidebar_frame_color,
+        'text_color': theme_manager.theme_manager.text_color,
+        'text_color_secondary': theme_manager.text_color_secondary,
+        'button_primary': theme_manager.button_primary,
+        'button_success': theme_manager.button_success,
+        'button_info': theme_manager.button_info,
+        'button_warning': theme_manager.button_warning,
+        'button_danger': theme_manager.button_danger,
+        'button_secondary': theme_manager.button_secondary,
+        'button_purple': theme_manager.button_purple,
+        'button_blue': theme_manager.button_blue,
+        'border_color': theme_manager.border_color,
+    }
 
 def set_window_icon(window):
     """Устанавливает иконку для окна"""
@@ -37,7 +69,8 @@ class MainApp(customtkinter.CTk):
         self.user_group = user_group
         self.title("Domovoy - Бронирование домов")
         self.geometry("1600x1020")
-        self.configure(fg_color="#FFFFFF")
+
+        self.configure(fg_color=theme_manager.main_frame_color)
         set_window_icon(self)
 
         # Настройка сетки
@@ -47,6 +80,25 @@ class MainApp(customtkinter.CTk):
         self.setup_sidebar()
         self.setup_main_content()
         self.load_houses()
+
+    def toggle_theme(self):
+        """Переключает тему оформления"""
+        # Переключаем тему (автоматически сохраняется в файл settings.cfg)
+        new_theme = theme_manager.toggle_theme()
+
+        # Принудительное обновление
+        self.configure(fg_color=theme_manager.main_frame_color)
+
+        # Пересоздаём всё
+        for widget in self.winfo_children():
+            widget.destroy()
+
+        # Пересоздаем интерфейс
+        self.setup_sidebar()
+        self.setup_main_content()
+        self.load_houses()
+
+        print(f"✅ Тема переключена на: {new_theme}")
 
     def update_house_rating(self, house_id):
         """
@@ -275,7 +327,7 @@ class MainApp(customtkinter.CTk):
 
     def setup_sidebar(self):
         # Боковая панель для фильтров
-        sidebar = customtkinter.CTkFrame(self, fg_color="#F1F3F4", width=300, corner_radius=0)
+        sidebar = customtkinter.CTkFrame(self, fg_color=theme_manager.sidebar_frame_color, width=300, corner_radius=0)
         sidebar.grid(row=0, column=0, sticky="nsew", padx=(0, 1))
         sidebar.grid_propagate(False)
 
@@ -287,51 +339,51 @@ class MainApp(customtkinter.CTk):
         # Информация о пользователе
         user_info_label = customtkinter.CTkLabel(sidebar,
                                                  text=f"Пользователь: {self.username}\nГруппа: {self.user_group}",
-                                                 text_color="#111318",
+                                                 text_color=theme_manager.text_color,
                                                  font=("Arial", 12))
         user_info_label.grid(row=0, column=0, padx=20, pady=(20, 10), sticky="w")
 
         # Заголовок фильтров
         filter_label = customtkinter.CTkLabel(sidebar,
                                               text="Фильтры",
-                                              text_color="#111318",
+                                              text_color=theme_manager.text_color,
                                               font=("Arial", 18, "bold"))
         filter_label.grid(row=1, column=0, padx=20, pady=(20, 10), sticky="w")
 
         # Поля для фильтрации
         self.area_filter = customtkinter.CTkEntry(sidebar,
                                                   placeholder_text="Площадь (Кв/М)",
-                                                  fg_color="#F0F0F0",
-                                                  text_color="#111318",
-                                                  placeholder_text_color="#6B7280",
-                                                  border_color="#F0F0F0",
+                                                  fg_color=theme_manager.house_frame_color,
+                                                  text_color=theme_manager.text_color,
+                                                  placeholder_text_color=theme_manager.text_color_secondary,
+                                                  border_color=theme_manager.text_color_secondary,
                                                   height=40)
         self.area_filter.grid(row=2, column=0, padx=20, pady=5, sticky="ew")
 
         self.floor_filter = customtkinter.CTkEntry(sidebar,
                                                    placeholder_text="Этаж",
-                                                   fg_color="#F0F0F0",
-                                                   text_color="#111318",
-                                                   placeholder_text_color="#6B7280",
-                                                   border_color="#F0F0F0",
+                                                   fg_color=theme_manager.house_frame_color,
+                                                   text_color=theme_manager.text_color,
+                                                   placeholder_text_color=theme_manager.text_color_secondary,
+                                                   border_color=theme_manager.text_color_secondary,
                                                    height=40)
         self.floor_filter.grid(row=3, column=0, padx=20, pady=5, sticky="ew")
 
         self.rooms_filter = customtkinter.CTkEntry(sidebar,
                                                    placeholder_text="Количество комнат",
-                                                   fg_color="#F0F0F0",
-                                                   text_color="#111318",
-                                                   placeholder_text_color="#6B7280",
-                                                   border_color="#F0F0F0",
+                                                   fg_color=theme_manager.house_frame_color,
+                                                   text_color=theme_manager.text_color,
+                                                   placeholder_text_color=theme_manager.text_color_secondary,
+                                                   border_color=theme_manager.text_color_secondary,
                                                    height=40)
         self.rooms_filter.grid(row=4, column=0, padx=20, pady=5, sticky="ew")
 
         self.price_filter = customtkinter.CTkEntry(sidebar,
                                                    placeholder_text="Макс. цена",
-                                                   fg_color="#F0F0F0",
-                                                   text_color="#111318",
-                                                   placeholder_text_color="#6B7280",
-                                                   border_color="#F0F0F0",
+                                                   fg_color=theme_manager.house_frame_color,
+                                                   text_color=theme_manager.text_color,
+                                                   placeholder_text_color=theme_manager.text_color_secondary,
+                                                   border_color=theme_manager.text_color_secondary,
                                                    height=40)
         self.price_filter.grid(row=5, column=0, padx=20, pady=5, sticky="ew")
 
@@ -339,7 +391,7 @@ class MainApp(customtkinter.CTk):
         filter_button = customtkinter.CTkButton(sidebar,
                                                 text="Применить фильтры",
                                                 command=self.apply_filters,
-                                                fg_color="#FF740F",
+                                                fg_color=theme_manager.button_primary,
                                                 text_color="#111318",
                                                 height=40)
         filter_button.grid(row=6, column=0, padx=20, pady=10, sticky="ew")
@@ -347,7 +399,7 @@ class MainApp(customtkinter.CTk):
         clear_button = customtkinter.CTkButton(sidebar,
                                                text="Сбросить фильтры",
                                                command=self.clear_filters,
-                                               fg_color="#6B7280",
+                                               fg_color=theme_manager.button_secondary,
                                                text_color="#FFFFFF",
                                                height=40)
         clear_button.grid(row=7, column=0, padx=20, pady=5, sticky="ew")
@@ -357,7 +409,7 @@ class MainApp(customtkinter.CTk):
             add_button = customtkinter.CTkButton(sidebar,
                                                  text="+ Добавить объект",
                                                  command=self.show_add_dialog,
-                                                 fg_color="#10B981",
+                                                 fg_color=theme_manager.button_success,
                                                  text_color="#FFFFFF",
                                                  height=40)
             add_button.grid(row=8, column=0, padx=20, pady=(20, 5), sticky="ew")
@@ -369,7 +421,7 @@ class MainApp(customtkinter.CTk):
                 sidebar,
                 text="📋 Мои бронирования",
                 command=self.show_my_bookings,
-                fg_color="#3B82F6",
+                fg_color=theme_manager.button_info,
                 text_color="#FFFFFF",
                 height=40
             )
@@ -386,7 +438,7 @@ class MainApp(customtkinter.CTk):
                 sidebar,
                 text=btn_text,
                 command=self.show_favorites,
-                fg_color="#F59E0B",
+                fg_color=theme_manager.button_warning,
                 text_color="#FFFFFF",
                 height=40,
                 anchor="w"
@@ -400,7 +452,7 @@ class MainApp(customtkinter.CTk):
                 sidebar,
                 text="⏳ Непроверенные объекты",
                 command=self.show_unverified,
-                fg_color="#F59E0B",
+                fg_color=theme_manager.button_warning,
                 text_color="#FFFFFF",
                 height=40
             )
@@ -411,7 +463,7 @@ class MainApp(customtkinter.CTk):
                 sidebar,
                 text="📊 Все бронирования",
                 command=self.show_all_bookings,
-                fg_color="#8B5CF6",
+                fg_color=theme_manager.button_blue,
                 text_color="#FFFFFF",
                 height=40
             )
@@ -435,7 +487,7 @@ class MainApp(customtkinter.CTk):
                 sidebar,
                 text="➕ Добавить пользователя",
                 command=self.show_add_user_dialog,
-                fg_color="#8B5CF6",
+                fg_color=theme_manager.button_purple,
                 text_color="#FFFFFF",
                 height=40
             )
@@ -446,7 +498,7 @@ class MainApp(customtkinter.CTk):
                 sidebar,
                 text="👥 Все пользователи",
                 command=self.show_all_users,
-                fg_color="#6366F1",
+                fg_color=theme_manager.button_blue,
                 text_color="#FFFFFF",
                 height=40
             )
@@ -461,40 +513,49 @@ class MainApp(customtkinter.CTk):
         separator_exit = customtkinter.CTkFrame(bottom_frame, height=2, fg_color="#D1D5DB")
         separator_exit.grid(row=0, column=0, sticky="ew", pady=(0, 10))
 
+        # ===== КНОПКА ПЕРЕКЛЮЧЕНИЯ ТЕМЫ =====
+        theme_btn = customtkinter.CTkButton(
+            sidebar,
+            text="🌓 Сменить тему",
+            command=self.toggle_theme,
+            fg_color="#6B7280",
+            text_color="#FFFFFF",
+            height=40
+        )
+        theme_btn.grid(row=99, column=0, padx=20, pady=5, sticky="ew")
+
         # Кнопка выхода
         exit_btn = customtkinter.CTkButton(
             bottom_frame,
             text="🚪 Выйти из аккаунта",
             command=self.logout,
-            fg_color="#EF4444",
+            fg_color=theme_manager.button_danger,
             text_color="#FFFFFF",
             height=40,
             font=("Arial", 12, "bold")
         )
         exit_btn.grid(row=1, column=0, sticky="ew")
 
-
     def setup_main_content(self):
         # Основная область контента
-        main_frame = customtkinter.CTkFrame(self, fg_color="#FFFFFF")
+        main_frame = customtkinter.CTkFrame(self, fg_color=theme_manager.main_frame_color)
         main_frame.grid(row=0, column=1, sticky="nsew", padx=1)
         main_frame.grid_columnconfigure(0, weight=1)
         main_frame.grid_rowconfigure(1, weight=1)
 
         # Заголовок
         title_label = customtkinter.CTkLabel(main_frame,
-                                             text="Дома для бронирования",  # Изменили текст
-                                             text_color="#111318",
+                                             text="Дома для бронирования",
+                                             text_color=theme_manager.text_color,
                                              font=("Arial", 24, "bold"))
         title_label.grid(row=0, column=0, padx=20, pady=20, sticky="w")
 
         # Фрейм для карточек домов
         self.houses_frame = customtkinter.CTkScrollableFrame(main_frame,
-                                                             fg_color="#FFFFFF")
+                                                             fg_color=theme_manager.house_frame_color)
         self.houses_frame.grid(row=1, column=0, sticky="nsew", padx=20, pady=(0, 20))
         self.houses_frame.grid_columnconfigure(0, weight=1)
 
-        # Привязка колесика мыши для скроллинга
         self.bind_mouse_wheel()
 
     def show_my_bookings(self):
@@ -536,7 +597,7 @@ class MainApp(customtkinter.CTk):
             no_data_label = customtkinter.CTkLabel(
                 self.houses_frame,
                 text="⭐ У вас пока нет избранных домов",
-                text_color="#6B7280",
+                text_color=theme_manager.text_color,
                 font=("Arial", 16)
             )
             no_data_label.pack(pady=50)
@@ -615,7 +676,7 @@ class MainApp(customtkinter.CTk):
             self.parent = parent
             self.title("Добавить пользователя")
             self.geometry("400x450")
-            self.configure(fg_color="#FFFFFF")
+            self.configure(fg_color=theme_manager.main_frame_color)
             self.resizable(False, False)
 
             # НЕ делаем grab_set сразу - окно еще не готово
@@ -661,13 +722,13 @@ class MainApp(customtkinter.CTk):
 
             cancel_btn = customtkinter.CTkButton(button_frame,
                                                  text="Отмена",
-                                                 fg_color="#6B7280",
+                                                 fg_color=theme_manager.button_secondary,
                                                  command=self.destroy)
             cancel_btn.pack(side="left", padx=10)
 
             add_btn = customtkinter.CTkButton(button_frame,
                                               text="Добавить",
-                                              fg_color="#10B981",
+                                              fg_color=theme_manager.button_success,
                                               command=self.add_user)
             add_btn.pack(side="left", padx=10)
 
@@ -852,7 +913,7 @@ class MainApp(customtkinter.CTk):
 
     def create_house_card(self, house, index):
         card = customtkinter.CTkFrame(self.houses_frame,
-                                      fg_color="#F1F3F4",
+                                      fg_color=theme_manager.card_body_color,
                                       corner_radius=10)
         card.grid(row=index, column=0, sticky="ew", padx=(0, 10), pady=5)
         card.grid_columnconfigure(1, weight=1)
@@ -863,7 +924,7 @@ class MainApp(customtkinter.CTk):
         if not verified and self.user_group == 'admin':
             verification_badge = customtkinter.CTkLabel(card,
                                                         text="⏳ НЕ ПРОВЕРЕНО",
-                                                        text_color="#EF4444",
+                                                        text_color=theme_manager.text_color,
                                                         font=("Arial", 10, "bold"))
             verification_badge.grid(row=0, column=2, padx=15, pady=(15, 0), sticky="ne")
 
@@ -886,21 +947,21 @@ class MainApp(customtkinter.CTk):
                 # Заглушка
                 no_image_label = customtkinter.CTkLabel(card,
                                                         text="🏠",
-                                                        text_color="#6B7280",
+                                                        text_color=theme_manager.text_color,
                                                         font=("Arial", 24))
                 no_image_label.grid(row=0, column=0, rowspan=3, padx=15, pady=15, sticky="nsew")
         else:
             # Заглушка если нет картинки
             no_image_label = customtkinter.CTkLabel(card,
                                                     text="🏠",
-                                                    text_color="#6B7280",
+                                                    text_color=theme_manager.text_color,
                                                     font=("Arial", 24))
             no_image_label.grid(row=0, column=0, rowspan=3, padx=15, pady=15, sticky="nsew")
 
         # Адрес
         address_label = customtkinter.CTkLabel(card,
                                                text=f"📍 {address}",
-                                               text_color="#111318",
+                                               text_color=theme_manager.text_color,
                                                font=("Arial", 16, "bold"),
                                                anchor="w")
         address_label.grid(row=0, column=1, columnspan=2, padx=15, pady=(15, 5), sticky="w")
@@ -924,7 +985,7 @@ class MainApp(customtkinter.CTk):
         rating_label = customtkinter.CTkLabel(
             rating_frame,
             text=rating_text,
-            text_color="#F59E0B",
+            text_color=theme_manager.text_color,
             font=("Arial", 12, "bold")
         )
         rating_label.pack(side="right", padx=(0, 5))
@@ -935,7 +996,7 @@ class MainApp(customtkinter.CTk):
             text="👁",
             width=30,
             height=30,
-            fg_color="#3B82F6",
+            fg_color=theme_manager.button_info,
             command=lambda hid=house_id, addr=address: self.show_house_reviews(hid, addr)
         )
         view_reviews_btn.pack(side="right", padx=(0, 10))
@@ -951,7 +1012,7 @@ class MainApp(customtkinter.CTk):
                 width=40,
                 height=40,
                 fg_color="#F59E0B" if is_fav else "#6B7280",
-                text_color="#FFFFFF",
+                text_color='#ffffff',
                 font=("Arial", 16),
                 command=lambda hid=house_id, btn=None: self.toggle_favorite(hid, card)
             )
@@ -962,7 +1023,7 @@ class MainApp(customtkinter.CTk):
         details_text = f"🏘️ Площадь (Кв/м): {area} | 🏢 Этаж: {floor} | 🚪 Комнат: {rooms}"
         details_label = customtkinter.CTkLabel(card,
                                                text=details_text,
-                                               text_color="#6B7280",
+                                               text_color=theme_manager.text_color,
                                                font=("Arial", 12),
                                                anchor="w")
         details_label.grid(row=1, column=1, columnspan=2, padx=15, pady=5, sticky="w")
@@ -971,7 +1032,7 @@ class MainApp(customtkinter.CTk):
         formatted_price = self.format_price(price)
         price_label = customtkinter.CTkLabel(card,
                                              text=f"Цена: {formatted_price}",
-                                             text_color="#111318",
+                                             text_color=theme_manager.text_color,
                                              font=("Arial", 14, "bold"),
                                              anchor="w")
         price_label.grid(row=2, column=1, padx=15, pady=(5, 15), sticky="w")
@@ -987,7 +1048,7 @@ class MainApp(customtkinter.CTk):
                 text="📅 Календарь",
                 width=100,
                 height=30,
-                fg_color="#8B5CF6",
+                fg_color=theme_manager.button_purple,
                 text_color="#FFFFFF",
                 font=("Arial", 12),
                 command=lambda h=house_id, a=address: self.show_calendar(h, a)
@@ -1001,7 +1062,7 @@ class MainApp(customtkinter.CTk):
                 text="📅 Забронировать",
                 width=140,
                 height=35,
-                fg_color="#10B981",
+                fg_color=theme_manager.button_success,
                 text_color="#FFFFFF",
                 font=("Arial", 12, "bold"),
                 command=lambda h=house: self.book_house(h)
@@ -1015,7 +1076,7 @@ class MainApp(customtkinter.CTk):
                                                      text="✓ Верифицировать",
                                                      width=130,
                                                      height=30,
-                                                     fg_color="#10B981",
+                                                     fg_color=theme_manager.button_success,
                                                      text_color="#FFFFFF",
                                                      command=lambda hid=house_id: self.verify_house(hid))
                 verify_btn.pack(side="right", padx=(5, 0))
@@ -1024,7 +1085,7 @@ class MainApp(customtkinter.CTk):
                                                text="✏ Редактировать",
                                                width=130,
                                                height=30,
-                                               fg_color="#3B82F6",
+                                               fg_color=theme_manager.button_info,
                                                text_color="#FFFFFF",
                                                command=lambda h=house: self.show_edit_dialog(h))
             edit_btn.pack(side="right", padx=(5, 0))
@@ -1033,7 +1094,7 @@ class MainApp(customtkinter.CTk):
                                                  text="🗑 Удалить️",
                                                  width=100,
                                                  height=30,
-                                                 fg_color="#EF4444",
+                                                 fg_color=theme_manager.button_danger,
                                                  text_color="#FFFFFF",
                                                  command=lambda hid=house_id: self.delete_house(hid))
             delete_btn.pack(side="right", padx=(5, 0))
@@ -1157,7 +1218,7 @@ class MainApp(customtkinter.CTk):
         calendar_window = customtkinter.CTkToplevel(self)
         calendar_window.title(f"Календарь занятости - {address}")
         calendar_window.geometry("500x500")
-        calendar_window.configure(fg_color="#FFFFFF")
+        calendar_window.configure(fg_color=theme_manager.main_frame_color)
         calendar_window.transient(self)
 
         # Центрируем окно
@@ -1178,7 +1239,7 @@ class MainApp(customtkinter.CTk):
         close_btn = customtkinter.CTkButton(
             calendar_window,
             text="Закрыть",
-            fg_color="#6B7280",
+            fg_color=theme_manager.button_secondary,
             command=calendar_window.destroy
         )
         close_btn.pack(pady=(0, 20))
@@ -1225,7 +1286,7 @@ class AddEditDialog(customtkinter.CTkToplevel):
         super().__init__(parent)
         self.title(title)
         self.geometry("500x750")
-        self.configure(fg_color="#FFFFFF")
+        self.configure(fg_color=theme_manager.main_frame_color)
         self.resizable(False, False)
 
         self.house = house
@@ -1244,7 +1305,7 @@ class AddEditDialog(customtkinter.CTkToplevel):
         # Заголовок
         title_label = customtkinter.CTkLabel(self,
                                              text=title,
-                                             text_color="#111318",
+                                             text_color=theme_manager.text_color,
                                              font=("Arial", 20, "bold"))
         title_label.grid(row=0, column=0, padx=20, pady=(20, 10), sticky="w")
 
@@ -1310,7 +1371,7 @@ class AddEditDialog(customtkinter.CTkToplevel):
 
         save_btn = customtkinter.CTkButton(button_frame,
                                            text="Сохранить",
-                                           fg_color="#FF740F",
+                                           fg_color=theme_manager.button_primary,
                                            text_color="#111318",
                                            height=40,
                                            command=self.save_house)
@@ -1322,6 +1383,53 @@ class AddEditDialog(customtkinter.CTkToplevel):
     def finalize_dialog(self):
         """Завершает настройку диалога после его отображения"""
         self._setup_dialog()
+
+    def create_form_field_with_label(self, placeholder, attr_name, row, hint_text=""):
+        """Создает поле ввода с меткой"""
+        # Метка
+        label = customtkinter.CTkLabel(
+            self,
+            text=placeholder + ":",
+            text_color=theme_manager.text_color,
+            font=("Arial", 12, "bold"),
+            anchor="w"
+        )
+        label.grid(row=row, column=0, padx=20, pady=(10, 5), sticky="w")
+
+        # Поле ввода
+        entry = customtkinter.CTkEntry(
+            self,
+            placeholder_text=hint_text,
+            fg_color=theme_manager.secondary_bg if hasattr(theme_manager, 'secondary_bg') else "#F0F0F0",
+            text_color=theme_manager.text_color,
+            border_color=theme_manager.border_color,
+            height=40
+        )
+        entry.grid(row=row + 1, column=0, padx=20, pady=(0, 10), sticky="ew")
+
+        # Сохраняем ссылку на поле (чтобы потом получить значение)
+        setattr(self, f"{attr_name}_entry", entry)
+
+    def select_image(self):
+        """Выбор изображения для дома"""
+        file_path = filedialog.askopenfilename(
+            title="Выберите изображение",
+            filetypes=[("Image files", "*.png *.jpg *.jpeg *.gif *.bmp")]
+        )
+        if file_path:
+            self.image_path = file_path
+            self.image_path_label.configure(
+                text=f"Выбрано: {os.path.basename(file_path)}",
+                text_color=theme_manager.text_color
+            )
+
+    def remove_image(self):
+        """Удаление выбранного изображения"""
+        self.image_path = None
+        self.image_path_label.configure(
+            text="Изображение не выбрано",
+            text_color=theme_manager.text_color_secondary
+        )
 
     def _setup_dialog(self):
         """Настройка диалога после полной инициализации"""

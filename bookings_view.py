@@ -5,6 +5,7 @@ from datetime import datetime
 import sqlite3
 from databases.app_database import get_user_bookings, cancel_booking, update_booking_statuses
 from booking_details import BookingDetailsWindow
+from theme_manager import theme_manager
 
 
 class BookingsWindow(customtkinter.CTkToplevel):
@@ -16,7 +17,7 @@ class BookingsWindow(customtkinter.CTkToplevel):
 
         self.title("Мои бронирования" if user_group == 'user' else "Все бронирования")
         self.geometry("1000x600")
-        self.configure(fg_color="#FFFFFF")
+        self.configure(fg_color=theme_manager.main_frame_color)
 
         # Обновляем статусы при открытии, но только для прошлых дат
         # Это не должно менять статус ТОЛЬКО ЧТО созданных бронирований
@@ -34,18 +35,19 @@ class BookingsWindow(customtkinter.CTkToplevel):
         title_label = customtkinter.CTkLabel(
             main_frame,
             text="Мои бронирования" if user_group == 'user' else "Все бронирования системы",
-            text_color="#111318",
+            text_color=theme_manager.text_color,
             font=("Arial", 24, "bold")
         )
         title_label.pack(pady=(0, 20))
 
         # Фильтры по статусу
-        filter_frame = customtkinter.CTkFrame(main_frame, fg_color="#F1F3F4", corner_radius=10)
+        filter_frame = customtkinter.CTkFrame(main_frame, fg_color=theme_manager.house_frame_color, corner_radius=10)
         filter_frame.pack(fill="x", pady=(0, 20))
 
         filter_label = customtkinter.CTkLabel(
             filter_frame,
             text="Фильтр по статусу:",
+            text_color=theme_manager.text_color,
             font=("Arial", 12, "bold")
         )
         filter_label.pack(side="left", padx=10, pady=10)
@@ -60,7 +62,7 @@ class BookingsWindow(customtkinter.CTkToplevel):
         self.status_filter.pack(side="left", padx=10, pady=10)
 
         # Статистика
-        self.stats_frame = customtkinter.CTkFrame(main_frame, fg_color="#F1F3F4", corner_radius=10)
+        self.stats_frame = customtkinter.CTkFrame(main_frame, fg_color=theme_manager.house_frame_color, corner_radius=10)
         self.stats_frame.pack(fill="x", pady=(0, 20))
 
         # Scrollable frame для бронирований
@@ -225,7 +227,7 @@ class BookingsWindow(customtkinter.CTkToplevel):
         address_label = customtkinter.CTkLabel(
             card,
             text=f"📍 {booking['address']}",
-            text_color="#111318",
+            text_color=theme_manager.text_color,
             font=("Arial", 16, "bold"),
             anchor="w"
         )
@@ -245,7 +247,7 @@ class BookingsWindow(customtkinter.CTkToplevel):
         price_label = customtkinter.CTkLabel(
             card,
             text=f"💰 {booking['total_price']:,} ₽".replace(',', ' '),
-            text_color="#111318",
+            text_color=	theme_manager.text_color,
             font=("Arial", 14, "bold")
         )
         price_label.grid(row=2, column=0, padx=15, pady=(5, 15), sticky="w")
@@ -372,7 +374,7 @@ class AdminBookingsWindow(BookingsWindow):
         info_label = customtkinter.CTkLabel(
             card,
             text=info_text,
-            text_color="#111318",
+            text_color=	theme_manager.text_color,
             font=("Arial", 12),
             justify="left"
         )

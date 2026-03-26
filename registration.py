@@ -5,7 +5,7 @@ import time
 import re
 
 from databases import app_database
-
+from theme_manager import theme_manager
 
 def set_window_icon(window):
     """Устанавливает иконку для окна"""
@@ -36,7 +36,7 @@ class RegisterWindow(customtkinter.CTk):
         super().__init__()
         self.title("Domovoy - Создание аккаунта")
         self.geometry("1280x720")
-        self.configure(fg_color="#FFFFFF")
+        self.configure(fg_color=theme_manager.main_frame_color)
         set_window_icon(self)
 
         custom_font = customtkinter.CTkFont(
@@ -68,7 +68,7 @@ class RegisterWindow(customtkinter.CTk):
 
         self.title_label = customtkinter.CTkLabel(center_frame,
                                                   text="Регистрация",
-                                                  text_color="#111318",
+                                                  text_color=theme_manager.text_color_secondary,
                                                   font=("Arial", 24, "bold")  # Можно настроить шрифт
                                                   )
         self.title_label.grid(row=0, column=0, padx=20, pady=(0, 30))
@@ -76,10 +76,10 @@ class RegisterWindow(customtkinter.CTk):
         # Остальные элементы
         self.login = customtkinter.CTkEntry(center_frame,
                                             placeholder_text="Логин",
-                                            fg_color="#F0F0F0",
-                                            text_color="#111318",
-                                            placeholder_text_color="#6B7280",
-                                            border_color="#F0F0F0",
+                                            fg_color=theme_manager.house_frame_color,
+                                            text_color=theme_manager.text_color,
+                                            placeholder_text_color=theme_manager.text_color_secondary,
+                                            border_color=theme_manager.text_color_secondary,
                                             width=300,
                                             height=40,
                                             validate="key",
@@ -90,10 +90,10 @@ class RegisterWindow(customtkinter.CTk):
 
         self.password = customtkinter.CTkEntry(center_frame,
                                                placeholder_text="Пароль",
-                                               fg_color="#F0F0F0",
-                                               text_color="#111318",
-                                               placeholder_text_color="#6B7280",
-                                               border_color="#F0F0F0",
+                                               fg_color=theme_manager.house_frame_color,
+                                               text_color=theme_manager.text_color,
+                                               placeholder_text_color=theme_manager.text_color_secondary,
+                                               border_color=theme_manager.text_color_secondary,
                                                show="✱︎",
                                                width=300,
                                                height=40,
@@ -103,10 +103,10 @@ class RegisterWindow(customtkinter.CTk):
 
         self.password_repeat = customtkinter.CTkEntry(center_frame,
                                                       placeholder_text="Повтор пароля",
-                                                      fg_color="#F0F0F0",
-                                                      text_color="#111318",
-                                                      placeholder_text_color="#6B7280",
-                                                      border_color="#F0F0F0",
+                                                      fg_color=theme_manager.house_frame_color,
+                                                      text_color=theme_manager.text_color,
+                                                      placeholder_text_color=theme_manager.text_color_secondary,
+                                                      border_color=theme_manager.text_color_secondary,
                                                       show="✱︎",
                                                       width=300,
                                                       height=40,
@@ -125,7 +125,7 @@ class RegisterWindow(customtkinter.CTk):
         self.auth = customtkinter.CTkButton(center_frame,
                                             text="Зарегистрироваться",
                                             command=self.button_callback,
-                                            fg_color="#FF740F",
+                                            fg_color=theme_manager.button_primary,
                                             text_color="#111318",
                                             width=300,
                                             height=40,
