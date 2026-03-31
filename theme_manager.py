@@ -33,7 +33,7 @@ class ThemeManager:
                         self.set_dark_theme()
                     else:
                         self.set_light_theme()
-                    print(f"🎨 Загружена тема из файла: {theme}")
+                    #print(f"🎨 Загружена тема из файла: {theme}")
                     return
             # Если файла нет или нет темы, используем светлую
             self.set_light_theme()

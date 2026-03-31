@@ -6,7 +6,7 @@ def set_window_icon(window):
     try:
         # Пробуем напрямую
         window.iconbitmap("icons/icon.ico")
-        print("Иконка установлена через iconbitmap")
+        #print("Иконка установлена через iconbitmap")
         return True
     except:
         try:
@@ -15,7 +15,7 @@ def set_window_icon(window):
             ico_path = tempfile.gettempdir() + "/temp_icon.ico"
             img.save(ico_path)
             window.iconbitmap(ico_path)
-            print("Иконка установлена через временный файл")
+            #print("Иконка установлена через временный файл")
             return True
         except Exception as e:
             print(f"Ошибка: {e}")

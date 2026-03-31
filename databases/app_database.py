@@ -1058,11 +1058,11 @@ def update_user_theme(username, theme):
             ''', (user_id, theme))
 
         conn.commit()
-        print(f"✅ Тема пользователя {username} обновлена на {theme}")
+        #print(f"✅ Тема пользователя {username} обновлена на {theme}")
         return True
 
     except Exception as e:
-        print(f"❌ Ошибка при обновлении темы: {e}")
+        #print(f"❌ Ошибка при обновлении темы: {e}")
         return False
     finally:
         conn.close()

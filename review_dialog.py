@@ -2,6 +2,7 @@
 import customtkinter
 from tkinter import messagebox
 from databases.app_database import add_review, get_house_average_rating
+from theme_manager import theme_manager
 
 
 class ReviewDialog(customtkinter.CTkToplevel):
@@ -15,7 +16,7 @@ class ReviewDialog(customtkinter.CTkToplevel):
 
         self.title(f"Отзыв о доме")
         self.geometry("500x600")
-        self.configure(fg_color="#FFFFFF")
+        self.configure(fg_color=theme_manager.main_frame_color)
         self.resizable(False, False)
 
         self.transient(parent)
@@ -25,14 +26,14 @@ class ReviewDialog(customtkinter.CTkToplevel):
 
     def setup_ui(self):
         """Создает интерфейс окна отзыва"""
-        main_frame = customtkinter.CTkFrame(self, fg_color="#FFFFFF")
+        main_frame = customtkinter.CTkFrame(self, fg_color=theme_manager.house_frame_color)
         main_frame.pack(fill="both", expand=True, padx=30, pady=30)
 
         # Заголовок
         title_label = customtkinter.CTkLabel(
             main_frame,
             text="Оставьте ваш отзыв",
-            text_color="#111318",
+            text_color=theme_manager.text_color,
             font=("Arial", 24, "bold")
         )
         title_label.pack(pady=(0, 10))
@@ -41,7 +42,7 @@ class ReviewDialog(customtkinter.CTkToplevel):
         address_label = customtkinter.CTkLabel(
             main_frame,
             text=f"📍 {self.address}",
-            text_color="#6B7280",
+            text_color=theme_manager.text_color,
             font=("Arial", 14)
         )
         address_label.pack(pady=(0, 30))
@@ -50,13 +51,13 @@ class ReviewDialog(customtkinter.CTkToplevel):
         rating_label = customtkinter.CTkLabel(
             main_frame,
             text="Ваша оценка:",
-            text_color="#111318",
+            text_color=theme_manager.text_color_secondary,
             font=("Arial", 16, "bold")
         )
         rating_label.pack(pady=(0, 10))
 
         # Фрейм для звезд - используем обычный Frame без прозрачности
-        self.stars_frame = customtkinter.CTkFrame(main_frame, fg_color="#FFFFFF")
+        self.stars_frame = customtkinter.CTkFrame(main_frame, fg_color=theme_manager.sidebar_frame_color)
         self.stars_frame.pack(pady=(0, 20))
 
         self.selected_rating = 0
@@ -82,7 +83,7 @@ class ReviewDialog(customtkinter.CTkToplevel):
         comment_label = customtkinter.CTkLabel(
             main_frame,
             text="Ваш отзыв:",
-            text_color="#111318",
+            text_color=theme_manager.text_color,
             font=("Arial", 16, "bold")
         )
         comment_label.pack(pady=(0, 10))
@@ -90,8 +91,8 @@ class ReviewDialog(customtkinter.CTkToplevel):
         self.comment_text = customtkinter.CTkTextbox(
             main_frame,
             height=150,
-            fg_color="#F1F3F4",
-            text_color="#111318",
+            fg_color=theme_manager.main_frame_color,
+            text_color=theme_manager.text_color_secondary,
             font=("Arial", 12)
         )
         self.comment_text.pack(fill="x", pady=(0, 20))
@@ -212,7 +213,7 @@ class ReviewsWindow(customtkinter.CTkToplevel):
 
         self.title(f"Отзывы - {address}")
         self.geometry("600x700")
-        self.configure(fg_color="#FFFFFF")
+        self.configure(fg_color=theme_manager.main_frame_color)
 
         self.transient(parent)
 
@@ -249,7 +250,7 @@ class ReviewsWindow(customtkinter.CTkToplevel):
         title_label = customtkinter.CTkLabel(
             main_frame,
             text=f"Отзывы о доме",
-            text_color="#111318",
+            text_color=theme_manager.text_color,
             font=("Arial", 20, "bold")
         )
         title_label.pack(pady=(0, 5))
@@ -264,7 +265,7 @@ class ReviewsWindow(customtkinter.CTkToplevel):
         address_label.pack(pady=(0, 10))
 
         # Средний рейтинг
-        rating_frame = customtkinter.CTkFrame(main_frame, fg_color="#F1F3F4", corner_radius=10)
+        rating_frame = customtkinter.CTkFrame(main_frame, fg_color=theme_manager.sidebar_frame_color, corner_radius=10)
         rating_frame.pack(fill="x", pady=(0, 20))
 
         avg_rating = self.rating_info['average']
@@ -277,7 +278,7 @@ class ReviewsWindow(customtkinter.CTkToplevel):
         avg_label = customtkinter.CTkLabel(
             rating_frame,
             text=rating_text,
-            text_color="#111318",
+            text_color=theme_manager.text_color,
             font=("Arial", 16, "bold")
         )
         avg_label.pack(padx=20, pady=15)
@@ -353,7 +354,7 @@ class ReviewsWindow(customtkinter.CTkToplevel):
 
     def create_review_card(self, parent, review):
         """Создает карточку отзыва"""
-        card = customtkinter.CTkFrame(parent, fg_color="#F8F9FA", corner_radius=10)
+        card = customtkinter.CTkFrame(parent, fg_color=theme_manager.house_frame_color, corner_radius=10)
         card.pack(fill="x", pady=5)
 
         # Заголовок с именем и датой
@@ -363,7 +364,7 @@ class ReviewsWindow(customtkinter.CTkToplevel):
         name_label = customtkinter.CTkLabel(
             header_frame,
             text=f"👤 {review['username']}",
-            text_color="#111318",
+            text_color=theme_manager.text_color,
             font=("Arial", 12, "bold")
         )
         name_label.pack(side="left")
@@ -395,7 +396,7 @@ class ReviewsWindow(customtkinter.CTkToplevel):
             comment_label = customtkinter.CTkLabel(
                 card,
                 text=review['comment'],
-                text_color="#111318",
+                text_color=theme_manager.text_color_secondary,
                 font=("Arial", 11),
                 wraplength=500,
                 justify="left"

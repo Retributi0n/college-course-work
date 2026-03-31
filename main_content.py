@@ -169,7 +169,7 @@ class MainApp(customtkinter.CTk):
                         else:
                             new_text = "⭐ Избранное"
 
-                        print(f"  Обновляем текст: '{btn_text}' -> '{new_text}'")
+                        #print(f"  Обновляем текст: '{btn_text}' -> '{new_text}'")
                         child.configure(text=new_text)
 
                         # Принудительно обновляем кнопку
@@ -882,14 +882,14 @@ class MainApp(customtkinter.CTk):
         if where_conditions:
             query += " WHERE " + " AND ".join(where_conditions)
 
-        print(f"Выполняем запрос: {query}")  # Для отладки
-        print(f"Параметры: {params}")  # Для отладки
+        #print(f"Выполняем запрос: {query}")  # Для отладки
+        #print(f"Параметры: {params}")  # Для отладки
 
         cursor.execute(query, params)
         houses = cursor.fetchall()
         conn.close()
 
-        print(f"Найдено домов: {len(houses)}")  # Для отладки
+        #print(f"Найдено домов: {len(houses)}")  # Для отладки
 
         # Создаем карточки для каждого дома
         for i, house in enumerate(houses):

@@ -75,19 +75,38 @@ class BookingDialog(customtkinter.CTkToplevel):
                                              font=("Arial", 12, "bold"))
         start_label.pack(side="left", padx=(0, 10))
 
-        self.start_day = customtkinter.CTkEntry(start_frame, width=40, placeholder_text="ДД")
+        self.start_day = customtkinter.CTkEntry(start_frame,
+                                                width=40,
+                                                placeholder_text="ДД",
+                                                fg_color = theme_manager.house_frame_color,
+                                                text_color = theme_manager.text_color,
+                                                placeholder_text_color = theme_manager.text_color_secondary,
+                                                border_color = theme_manager.text_color_secondary)
         self.start_day.pack(side="left", padx=2)
 
-        self.start_month = customtkinter.CTkEntry(start_frame, width=40, placeholder_text="ММ")
+        self.start_month = customtkinter.CTkEntry(start_frame,
+                                                  width=40,
+                                                  placeholder_text="ММ",
+                                                  fg_color = theme_manager.house_frame_color,
+                                                  text_color = theme_manager.text_color,
+                                                  placeholder_text_color = theme_manager.text_color_secondary,
+                                                  border_color = theme_manager.text_color_secondary)
         self.start_month.pack(side="left", padx=2)
 
-        self.start_year = customtkinter.CTkEntry(start_frame, width=60, placeholder_text="ГГГГ")
+        self.start_year = customtkinter.CTkEntry(start_frame,
+                                                 width=60,
+                                                 placeholder_text="ГГГГ",
+                                                 fg_color = theme_manager.house_frame_color,
+                                                 text_color = theme_manager.text_color,
+                                                 placeholder_text_color = theme_manager.text_color_secondary,
+                                                 border_color = theme_manager.text_color_secondary)
         self.start_year.pack(side="left", padx=2)
 
         # Кнопка "Сегодня"
         today_btn = customtkinter.CTkButton(start_frame,
                                             text="Сегодня",
                                             width=80,
+                                            fg_color=theme_manager.button_blue,
                                             command=self.set_today_start)
         today_btn.pack(side="left", padx=10)
 
@@ -101,19 +120,38 @@ class BookingDialog(customtkinter.CTkToplevel):
                                            font=("Arial", 12, "bold"))
         end_label.pack(side="left", padx=(0, 10))
 
-        self.end_day = customtkinter.CTkEntry(end_frame, width=40, placeholder_text="ДД")
+        self.end_day = customtkinter.CTkEntry(end_frame,
+                                              width=40,
+                                              placeholder_text="ДД",
+                                              fg_color = theme_manager.house_frame_color,
+                                              text_color = theme_manager.text_color,
+                                              placeholder_text_color = theme_manager.text_color_secondary,
+                                              border_color = theme_manager.text_color_secondary)
         self.end_day.pack(side="left", padx=2)
 
-        self.end_month = customtkinter.CTkEntry(end_frame, width=40, placeholder_text="ММ")
+        self.end_month = customtkinter.CTkEntry(end_frame,
+                                                width=40,
+                                                placeholder_text="ММ",
+                                                fg_color = theme_manager.house_frame_color,
+                                                text_color = theme_manager.text_color,
+                                                placeholder_text_color = theme_manager.text_color_secondary,
+                                                border_color = theme_manager.text_color_secondary)
         self.end_month.pack(side="left", padx=2)
 
-        self.end_year = customtkinter.CTkEntry(end_frame, width=60, placeholder_text="ГГГГ")
+        self.end_year = customtkinter.CTkEntry(end_frame,
+                                               width=60,
+                                               placeholder_text="ГГГГ",
+                                               fg_color = theme_manager.house_frame_color,
+                                               text_color = theme_manager.text_color,
+                                               placeholder_text_color = theme_manager.text_color_secondary,
+                                               border_color = theme_manager.text_color_secondary)
         self.end_year.pack(side="left", padx=2)
 
         # Кнопка "Завтра"
         tomorrow_btn = customtkinter.CTkButton(end_frame,
                                                text="Завтра",
                                                width=80,
+                                               fg_color=theme_manager.button_blue,
                                                command=self.set_tomorrow_end)
         tomorrow_btn.pack(side="left", padx=10)
 
@@ -122,7 +160,7 @@ class BookingDialog(customtkinter.CTkToplevel):
             dates_frame,
             text="📅 Открыть календарь",
             command=self.open_calendar,
-            fg_color="#8B5CF6",
+            fg_color=theme_manager.button_purple,
             width=150
         )
         calendar_btn.pack(pady=10)
@@ -134,7 +172,7 @@ class BookingDialog(customtkinter.CTkToplevel):
         calc_btn = customtkinter.CTkButton(calc_frame,
                                            text="🔄 Рассчитать стоимость",
                                            command=self.calculate_total,
-                                           fg_color="#F59E0B")
+                                           fg_color=theme_manager.button_primary)
         calc_btn.pack()
 
         # Метка для отображения ошибок
@@ -174,7 +212,7 @@ class BookingDialog(customtkinter.CTkToplevel):
 
         self.confirm_btn = customtkinter.CTkButton(button_frame,
                                                    text="Подтвердить бронирование",
-                                                   fg_color="#10B981",
+                                                   fg_color=theme_manager.button_success,
                                                    command=self.confirm_booking,
                                                    width=200,
                                                    state="disabled")
